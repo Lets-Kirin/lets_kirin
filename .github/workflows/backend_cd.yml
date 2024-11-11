@@ -1,0 +1,23 @@
+name: Backend Image CD
+
+on:
+  workflow_run:
+    workflows: ["Backend Image CI"]
+    types:
+        - completed
+  
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Pull Docker image
+      env:
+        DOCKER_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
+      run: sudo docker pull ${DOCKER_USERNAME}/lets_kirin-api:latest
+    - name: Delete Old docker container
+      run: sudo docker rm -f lets_kirin-api-container || true
+    - name: Run Docker Container
+      env:
+        DOCKER_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
+      run: sudo docker run -d -p 3000:3000 --env-file /etc/lets_kirin/.env --name lets_kirin-api-container ${DOCKER_USERNAME}/lets_kirin-api
