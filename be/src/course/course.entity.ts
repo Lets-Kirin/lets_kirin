@@ -9,53 +9,56 @@ export class Courses {
   department_major: string;
 
   @Column()
-  course_number: string;
+  courseNumber: string;
 
   @Column()
-  section_number: number;
+  sectionNumber: number;
 
   @Column()
-  course_name: string;
+  courseName: string;
 
   @Column()
-  lecture_language: string;
+  lectureLanguage: string;
 
   @Column()
-  course_classification: string;
+  courseClassification: string;
 
   @Column()
-  elective_area: string;
+  electiveArea: string;
 
   @Column()
-  credits_theory_practice: string;
+  yearSemester: number;
 
   @Column()
-  year_semester: number;
+  targetCourse: string;
 
   @Column()
-  target_course: string;
+  mainDepartment: string;
 
   @Column()
-  course_summary: string;
-
-  @Column()
-  syllabus: string;
-
-  @Column()
-  main_department: string;
-
-  @Column()
-  professor_name: string;
-
-  @Column()
-  day_time: string;
+  professorName: string;
 
   @Column()
   classroom: string;
 
   @Column()
-  online_course: string;
+  onlineCourse: string;
 
   @Column()
   credits: number;
+
+  @Column()
+  courseDescription: string;
+
+  @Column()
+  BSM: boolean;
+
+  @Column()
+  MSC: boolean;
+
+  @Column()
+  courseDay: string;
+
+  @Column()
+  courseTime: string;
 }

@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { COURSE_SKILL_MAPPING } from './taken_courses_skill';
 import * as XLSX from 'xlsx';
 import { UserRepository } from '../user.repository';
+import { UploadResponseDto } from './upload_response.dto';
 
 @Injectable()
 export class TakenCoursesService {
@@ -61,7 +62,10 @@ export class TakenCoursesService {
     }
   }
 
-  async uploadExcel(file: Express.Multer.File, userId: string): Promise<void> {
+  async uploadExcel(
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<UploadResponseDto> {
     try {
       // 스킬 레벨 초기화
       await this.userRepository.update(
@@ -78,12 +82,8 @@ export class TakenCoursesService {
         },
       );
 
-      console.log('Skill levels initialized');
-
       // 기존 수강 과목 삭제
       await this.takenCoursesRepository.delete({ userId });
-
-      console.log('Previous courses deleted');
 
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -111,7 +111,6 @@ export class TakenCoursesService {
         try {
           await this.takenCoursesRepository.save(takenCourse);
           await this.updateUserSkills(userId, takenCourse.courseName);
-          console.log(`Processed course: ${takenCourse.courseName}`);
         } catch (error) {
           console.error('Error saving course:', error);
           throw error;
@@ -120,7 +119,6 @@ export class TakenCoursesService {
 
       // GPA 계산
       const gpa = await this.calculateGPA(userId);
-      console.log('Calculated GPA:', gpa);
 
       // fileUpload 상태와 GPA 업데이트
       await this.userRepository.update(
@@ -131,7 +129,7 @@ export class TakenCoursesService {
         },
       );
 
-      console.log('File upload completed, user status and GPA updated');
+      return new UploadResponseDto();
     } catch (error) {
       console.error('Error in uploadExcel:', error);
       throw error;

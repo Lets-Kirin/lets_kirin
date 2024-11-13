@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { Courses } from './course.entity';
+import { CourseSearchResponseDto } from './course.search.response.dto';
 
 @Injectable()
 export class CourseService {
@@ -105,9 +106,11 @@ export class CourseService {
     };
   }
 
-  public async search(query: string) {
-    return this.courseRepository.find({
-      where: { course_name: Like(`%${query}%`) },
+  public async search(query: string): Promise<CourseSearchResponseDto[]> {
+    const courses = await this.courseRepository.find({
+      where: { courseName: Like(`%${query}%`) },
     });
+
+    return courses.map((course) => new CourseSearchResponseDto(course));
   }
 }

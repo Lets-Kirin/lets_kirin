@@ -6,9 +6,7 @@ import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
-  signIn(
-    authCredentialDto: AuthCredentialDto,
-  ): { accessToken: string } | PromiseLike<{ accessToken: string }> {
+  signIn(): { accessToken: string } | PromiseLike<{ accessToken: string }> {
     throw new Error('Method not implemented.');
   }
   constructor(private readonly userRepository: UserRepository) {}
