@@ -7,7 +7,7 @@ Sejong University Software Department Academic Conference
 
 ### Backend
 [![Backend Image CI](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_ci.yml/badge.svg)](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_ci.yml)
-[![Backend Image CD](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_cd.yml/badge.svg?branch=main)](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_cd.yml)
+[![Backend Image CD](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_cd.yml/badge.svg)](https://github.com/Lets-Kirin/lets_kirin/actions/workflows/backend_cd.yml)
 
 # 로컬환경에서 프론트엔드 / 백엔드 실행하기
 
@@ -48,7 +48,3 @@ npm install
 ```zsh
 npm start
 ```
-
-아래와 같은 화면이 나오면 성공 
-
-<img width="1920" alt="메인페이지" src="https://github.com/user-attachments/assets/5fe157ff-a1fc-4ad6-8548-73ae494754d9">
