@@ -107,6 +107,10 @@ export class CourseService {
   }
 
   public async search(query: string): Promise<CourseSearchResponseDto[]> {
+    if (!query || query.trim() === '') {
+      return [];
+    }
+    
     const courses = await this.courseRepository.find({
       where: { courseName: Like(`%${query}%`) },
       order: { courseName: 'ASC' },

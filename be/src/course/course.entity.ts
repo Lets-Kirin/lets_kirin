@@ -47,7 +47,7 @@ export class Courses {
   @Column()
   credits: number;
 
-  @Column()
+  @Column('text')
   courseDescription: string;
 
   @Column()
