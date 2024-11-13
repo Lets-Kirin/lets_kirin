@@ -109,6 +109,7 @@ export class CourseService {
   public async search(query: string): Promise<CourseSearchResponseDto[]> {
     const courses = await this.courseRepository.find({
       where: { courseName: Like(`%${query}%`) },
+      order: { courseName: 'ASC' },
     });
 
     return courses.map((course) => new CourseSearchResponseDto(course));

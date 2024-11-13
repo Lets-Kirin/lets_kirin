@@ -7,6 +7,9 @@ import { CourseModule } from './course/course.module';
 import { TakenCoursesModule } from './user/taken_courses/taken_courses.module';
 import { UserModule } from './user/user.module';
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
