@@ -26,6 +26,11 @@ export class User extends BaseEntity {
   year: string;
 
   @Column({
+    default: ''
+  })
+  updateTime: string;
+
+  @Column({
     default: false,
   })
   fileUpload: boolean;

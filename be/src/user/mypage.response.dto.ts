@@ -3,6 +3,7 @@ export class MyPageResponseDto {
   year: string;
   fileUpload: boolean;
   averageGrade: number;
+  updateTime: string;
   skillLevel: {
     algorithm: number;
     language: number;

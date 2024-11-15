@@ -7,7 +7,9 @@ import { UserRepository } from 'src/user/user.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
+import * as dotenv from 'dotenv';
 
+dotenv.config();
 @Module({
   imports: [
     UserModule,

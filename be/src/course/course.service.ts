@@ -112,6 +112,7 @@ export class CourseService {
     }
     
     const courses = await this.courseRepository.find({
+      // 공백 처리
       where: { courseName: Like(`%${query}%`) },
       order: { courseName: 'ASC' },
     });

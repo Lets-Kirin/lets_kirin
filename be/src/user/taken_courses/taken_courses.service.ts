@@ -125,6 +125,7 @@ export class TakenCoursesService {
         { id: userId },
         {
           fileUpload: true,
+          updateTime: new Date().toISOString().split('T')[0],
           GPA: gpa,
         },
       );

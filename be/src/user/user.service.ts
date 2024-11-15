@@ -50,6 +50,7 @@ export class UserService {
       year: user.year,
       fileUpload: user.fileUpload,
       averageGrade: user.GPA,
+      updateTime: user.updateTime,
       skillLevel: {
         algorithm: skillLevels.algorithm,
         language: skillLevels.language,
