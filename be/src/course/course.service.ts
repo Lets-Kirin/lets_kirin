@@ -110,10 +110,11 @@ export class CourseService {
     if (!query || query.trim() === '') {
       return [];
     }
-    
+
+    const trimmedQuery = query.trim();
+
     const courses = await this.courseRepository.find({
-      // 공백 처리
-      where: { courseName: Like(`%${query}%`) },
+      where: { courseName: Like(`%${trimmedQuery}%`) },
       order: { courseName: 'ASC' },
     });
 
