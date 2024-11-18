@@ -1,7 +1,9 @@
 import os
-
 import pymysql
+import json
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class QueryLoader:
     ABEEK = {
@@ -187,11 +189,11 @@ class QueryLoader:
     def __init__(self, priority_courses: dict, time_off: list, day_off: list, department: str, semester: int) -> None:
         self.time_off = time_off
         self.connection = pymysql.connect(
-            host=os.environ.get("DB_HOST"),
-            port=os.environ.get("DB_PORT"),
-            user=os.environ.get("DB_USER"),
-            password=os.environ.get("DB_PASSWORD"),
-            db=os.environ.get("DB_NAME"),
+            host=os.environ.get('DB_HOST'),
+            port=int(os.environ.get('DB_PORT')),
+            user=os.environ.get('DB_USER'),
+            password=os.environ.get('DB_PASSWORD'),
+            db=os.environ.get('DB_NAME')
         )
         cursor = self.connection.cursor()
         for course in priority_courses:
@@ -220,6 +222,9 @@ class QueryLoader:
 
         cursor.execute(self.priority_course_query)
         self.priority_course_results = cursor.fetchall()
+        self.connection.commit()
+        cursor.close()
+        self.connection.close()
 
     def get_abeek_query(self, department, semester):
         abeek_courses = ""
@@ -241,12 +246,20 @@ class QueryLoader:
             filter_day = time_off[idx]["day"]
             prefix_time = time_off[idx]["time"].split("-")[0]
             postfix_time = time_off[idx]["time"].split("-")[1]
-
-            time_filter += f"""AND NOT (
-            courseDay LIKE \'%{filter_day}%\'
-            AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', -1), '%H:%i') > STR_TO_DATE(\'{prefix_time}\', '%H:%i')
-            AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', 1), '%H:%i') < STR_TO_DATE(\'{postfix_time}\', '%H:%i')
-        )"""
+            if len(filter_day) == 1:
+                time_filter += f"""AND NOT (
+                courseDay LIKE \'%{filter_day}%\'
+                AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', -1), '%H:%i') > STR_TO_DATE(\'{prefix_time}\', '%H:%i')
+                AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', 1), '%H:%i') < STR_TO_DATE(\'{postfix_time}\', '%H:%i')
+            )"""
+            elif len(filter_day) == 2:
+                time_filter += f"""AND NOT (
+                (courseDay LIKE \'%{filter_day[0]}%\'
+                OR courseDay LIKE \'%{filter_day[1]}%\')
+                AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', -1), '%H:%i') > STR_TO_DATE(\'{prefix_time}\', '%H:%i')
+                AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', 1), '%H:%i') < STR_TO_DATE(\'{postfix_time}\', '%H:%i')
+            )"""
+                
 
         for idx in range(len(day_off)):
             time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx]}%\'"""
@@ -271,7 +284,7 @@ class QueryLoader:
         if priority_courses is False:
             return None
         priority_query = """
-        SELECT courseNumber, sectionNumber, courseName, courseClassification, courseDescription, professorName, courseDay, courseTime, credits
+        SELECT courseNumber, sectionNumber, courseName, professorName, courseDescription
         FROM courses
         WHERE"""
 
@@ -289,7 +302,7 @@ class QueryLoader:
     def get_main_data(self):
         course_result = """"""
         for row in self.main_results:
-            course_result += " | ".join(list([str(item) for item in row if itme != "courseClassification"]))
+            course_result += " | ".join(list([str(item) for item in row]))
             course_result += "\n"
         return course_result
 
@@ -299,3 +312,28 @@ class QueryLoader:
             priority_result += " | ".join(list([str(item) for item in row]))
             priority_result += "\n"
         return priority_result
+
+def to_json(pre_data, past_data):
+    data = pre_data + past_data
+    lines = data.replace('\n\n', '\n').strip().split("\n")
+    result = []
+    for line in lines:
+        # 열 단위로 분리
+        parts = line.split(" | ")
+        course_number = parts[0]
+        section_number = parts[1]
+        course_name = parts[2]
+        professor_name = parts[3]
+        recommend_description = parts[4].strip("[]")
+        
+        # JSON 객체 생성
+        result.append({
+            "courseNumber": course_number,
+            "sectionNumber": section_number,
+            "courseName": course_name,
+            "professorName": professor_name,
+            "recommendDescription": recommend_description
+        })
+
+    # JSON 데이터 출력
+    return json.dumps(result, ensure_ascii=False, indent=4)

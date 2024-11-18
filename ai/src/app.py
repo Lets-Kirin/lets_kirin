@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from utils import QueryLoader
+from utils import QueryLoader, to_json
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
@@ -12,18 +14,20 @@ app = FastAPI()
 		{
 			"courseName" : "서양철학의이해",
 			"courseNumber" : "009357",
-                        "sectionNumber" : "1",
+            "sectionNumber" : "1",
 			"professorName" : "David M Hindman",
 			"courseTime" : "10:30-12:00",
-			"courseDay" : "수금"
+			"courseDay" : "수금",
+            "credit" : 3
 		},
 		{
 			"courseName" : "한국전통문화의이해",
 			"courseNumber" : "009356",
-                        "sectionNumber" : "4",
+            "sectionNumber" : "3",
 			"professorName" : "시지은",
-			"courseTime" : "10:30-12:00",
-			"courseDay" : "월수"
+			"courseTime" : "15:00-16:30",
+			"courseDay" : "월수",
+            "credit" : 3
 		}
 	],
 
@@ -35,10 +39,10 @@ app = FastAPI()
 		}
 	],
 
-        "dayoff" : ["월"],
+        "dayoff" : ["화"],
         "department" : "소프트웨어학과",
-        "semester" : 2,
-        "credit" : 21
+        "semester" : 1,
+        "credit" : 15
 }
 """
 
@@ -51,7 +55,10 @@ async def process_data(payload: dict):
     loader = QueryLoader(
         payload["coursePriority"], payload["timeoff"], payload["dayoff"], payload["department"], payload["semester"]
     )
-    main_data = loader.main_results()
+    credits = payload['credit'] - sum([element['credit'] for element in payload["coursePriority"]])
+
+
+    main_data = loader.get_main_data()
     priority_data = loader.get_priority_data()
     # LangChain 프롬프트 및 모델 설정
     prompt = PromptTemplate(
@@ -65,7 +72,7 @@ async def process_data(payload: dict):
         Unique Course Names: Each recommended course should have a unique course name, avoiding any duplicates.
         No Time Conflicts: Ensure that recommended courses do not overlap in time on the same course day. For instance, a course scheduled on Thursday from 4 PM to 5 PM cannot overlap with a course scheduled on Thursday from 4 PM to 6 PM.
         Recommendation Rationale: Use each courses courseDescription to explain why it was recommended.
-        Credit Match: The sum of the credits of recommended courses should closely match the user's input credit requirement. And to take as many credits as possible
+        Credit Match: The sum of the credits of recommended courses should closely match the user's input credit requirement. *And to take as many credits as possible*
         Please output the results in the following format for each recommended course: courseNumber | sectionNumber | courseName | credits | professorName | [Reason for Recommendation]
 
         Format the output strictly as follows:
@@ -79,21 +86,39 @@ async def process_data(payload: dict):
         looking at the above data, please recommend a course within {credit} credits for the {department}에""",
     )
 
-    # from langchain.chat_models import ChatOpenAI
+    from langchain.chat_models import ChatOpenAI
 
-    # llm = ChatOpenAI(model_name="gpt-3.5-turbo")
-    # llm_chain = LLMChain(llm=llm, prompt=prompt)
+    llm = ChatOpenAI(temperature=1, model_name="gpt-3.5-turbo")
+    llm_chain = LLMChain(llm=llm, prompt=prompt)
 
-    # # chain = load_qa_chain(llm, chain_type="stuff")
+    # chain = load_qa_chain(llm, chain_type="stuff")
 
-    # def rec_table():
-    #     response = llm_chain.run(department=payload['department'], credit=payload['credit'], data=main_data)
-    #     return response
+    def rec_table():
+        response = llm_chain.run(department=payload['department'], credit=credits, data=main_data)
+        return response
 
-    # recommendation = rec_table()
-    return main_data
+    recommendation = rec_table()
+    print('\n\n')
+    print(main_data)
+    print('\n\n')
+    print(priority_data)
+    print('\n\n')
+    print(recommendation)
+    result = to_json(priority_data, recommendation)
+    return JSONResponse(content=jsonable_encoder(result))
 
 
 @app.post("/test/test")
 async def process_data(payload: dict):
-    return payload
+    if payload is False:
+        raise HTTPException(status_code=400, detail="Input data is missing")
+
+    loader = QueryLoader(
+        payload["coursePriority"], payload["timeoff"], payload["dayoff"], payload["department"], payload["semester"]
+    )
+    credits = payload['credit'] - sum([element['credit'] for element in payload["coursePriority"]])
+
+
+    main_data = loader.get_main_data()
+    priority_data = loader.get_priority_data()
+    return main_data
