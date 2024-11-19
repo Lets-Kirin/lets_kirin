@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AuthCredentialDto } from 'src/auth/dto/auth-credential.dto';
 import * as bcrypt from 'bcrypt';
+
 @Injectable()
 export class UserRepository extends Repository<User> {
   constructor(private dataSource: DataSource) {
@@ -14,11 +15,11 @@ export class UserRepository extends Repository<User> {
   }
 
   async createUser(authCredentialDto: AuthCredentialDto): Promise<void> {
-    const { id, pw, name, year } = authCredentialDto;
+    const { id, pw, name, year, department, semester } = authCredentialDto;
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(pw, salt);
-    const user = this.create({ id, pw: hashedPassword, name, year });
+    const user = this.create({ id, pw: hashedPassword, name, year, department, semester });
 
     try {
       await this.save(user);

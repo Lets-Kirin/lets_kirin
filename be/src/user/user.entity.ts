@@ -26,6 +26,11 @@ export class User extends BaseEntity {
   year: string;
 
   @Column({
+    default: '',
+  })
+  grade: string;
+
+  @Column({
     default: ''
   })
   updateTime: string;
@@ -64,4 +69,14 @@ export class User extends BaseEntity {
     server: number;
     ds: number;
   };
+
+  @Column({
+    default: false,
+  })
+  department: string;
+
+  @Column({
+    default: false,
+  })
+  semester: string;
 }

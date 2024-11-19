@@ -25,6 +25,12 @@ export class AuthCredentialDto {
 
   @IsString()
   year: string;
+
+  @IsString()
+  department: string;
+
+  @IsString()
+  semester: string;
 }
 function IsUnique(): (target: AuthCredentialDto, propertyKey: 'id') => void {
   return (target: AuthCredentialDto, propertyKey: 'id') => {
