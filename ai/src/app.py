@@ -41,14 +41,14 @@ app = FastAPI()
 
         "dayoff" : ["화"],
         "department" : "소프트웨어학과",
-        "semester" : 1,
+        "semester" : 2,
         "credit" : 15
 }
 """
 
 
 @app.post("/course/recommend")
-async def process_data(payload: dict):
+async def course_rec(payload: dict):
     if payload is False:
         raise HTTPException(status_code=400, detail="Input data is missing")
 
@@ -68,20 +68,22 @@ async def process_data(payload: dict):
 
         Please help me select courses according to these rules:
 
-        Priority Order: Recommend courses following this order: '전기', '전필', '전선'.
+        Priority Order: Recommend courses following this order: '전기', '전필', '전선', '기필', ETC...
         Unique Course Names: Each recommended course should have a unique course name, avoiding any duplicates.
         No Time Conflicts: Ensure that recommended courses do not overlap in time on the same course day. For instance, a course scheduled on Thursday from 4 PM to 5 PM cannot overlap with a course scheduled on Thursday from 4 PM to 6 PM.
         Recommendation Rationale: Use each courses courseDescription to explain why it was recommended.
-        Credit Match: The sum of the credits of recommended courses should closely match the user's input credit requirement. *And to take as many credits as possible*
+        Credit Match: The sum of the credits of recommended courses should closely match the user's input credit requirement. *Fill up your credit to be close to {credit} credits*
         Please output the results in the following format for each recommended course: courseNumber | sectionNumber | courseName | credits | professorName | [Reason for Recommendation]
 
         Format the output strictly as follows:
         courseNumber | sectionNumber | courseName | professorName | [Reason for Recommendation based on course description]
 
         Example:
-        10101 | A01 | Introduction to Programming | [This course is essential for understanding basic programming principles.]
+        10101 | 1 | Introduction to Programming | [This course is essential for understanding basic programming principles.]
+        10102 | 2 | AI Programming | [This course is essential for understanding basic programming principles.]
+        10103 | 1 | NLP | [This course is essential for understanding basic programming principles.]
 
-        Generate a list of courses adhering to this template.
+        Generate a list of courses adhering to this template. *Anwer into Korean*
         {data}
         looking at the above data, please recommend a course within {credit} credits for the {department}에""",
     )
@@ -92,19 +94,28 @@ async def process_data(payload: dict):
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     # chain = load_qa_chain(llm, chain_type="stuff")
-
-    def rec_table():
-        response = llm_chain.run(department=payload['department'], credit=credits, data=main_data)
-        return response
-
-    recommendation = rec_table()
-    print('\n\n')
     print(main_data)
-    print('\n\n')
-    print(priority_data)
-    print('\n\n')
-    print(recommendation)
-    result = to_json(priority_data, recommendation)
+    print('\n\n\n')
+    print(credits)
+    print('\n')
+    input_data = {
+        "department":payload['department'], 
+        "credit":credits, 
+        "data":main_data
+    }
+
+    # def rec_table():
+    response = llm_chain.invoke(input=input_data)
+        # return response
+    # recommendation = rec_table()
+    print(response['text'])
+    # print('\n\n')
+    # print(main_data)
+    # print('\n\n')
+    # print(priority_data)
+    # print('\n\n')
+    # print(recommendation)
+    result = to_json(priority_data, response['text'])
     return JSONResponse(content=jsonable_encoder(result))
 
 
@@ -122,3 +133,122 @@ async def process_data(payload: dict):
     main_data = loader.get_main_data()
     priority_data = loader.get_priority_data()
     return main_data
+
+
+@app.post("/skill/recommend")
+async def skill_rec(skill_score:dict):
+    """
+    {
+    "ai" : 9,
+    "language" : 7,
+    "server" : 6,
+    "cs" : 5,
+    "ds" : 6,
+    "algorithm" : 7
+    }
+    """
+
+
+    print(skill_score)
+    prompt = PromptTemplate(
+        input_variables=["ai_value","language_value","server_value","cs_value","ds_value","algorithm_value"],
+        template="""Analyze the software capabilities based on the following competency scores. Each score is out of 10, with 10 being the maximum. For any competency scoring below 8, identify it as an area for improvement and provide specific, actionable advice. Here are the scores:
+
+        AI Capabilities Score: {ai_value}
+        Programming Language Capabilities Score: {language_value}
+        Server Capabilities Score: {server_value}
+        Computer Science Capabilities Score: {cs_value}
+        Data Science Capabilities Score: {ds_value}
+        Algorithm Capabilities Score: {algorithm_value}
+
+        Step-by-Step Analysis with Examples:
+        Step 1: Identify scores below 8 and label them as improvement areas.
+        Step 2: For each identified area, analyze what key skills or knowledge are essential but may be lacking based on the score.
+        Step 3: Suggest specific ways to build on these skills, such as resources, learning strategies, or types of projects to pursue.
+
+        Examples of Analysis:
+
+        Example 1: Moderate Scores in AI, Server, and Algorithm Capabilities
+
+        Scores: 
+        AI Capabilities Score: 7,
+        Programming Language Capabilities Score: 9,
+        Server Capabilities Score: 6,
+        Computer Science Capabilities Score: 8,
+        Data Science Capabilities Score: 8,
+        Algorithm Capabilities Score: 6
+
+        Reasoning and Advice:
+        AI Capabilities Score (7): Focus on foundational machine learning concepts, including supervised learning and model optimization. Suggested actions: study through courses like "Machine Learning" by Andrew Ng on Coursera, and apply knowledge in hands-on projects such as building a classification or regression model.
+        Server Capabilities Score (6): Strengthen server management and networking basics. Suggested actions: explore online labs on AWS or Google Cloud to practice server setup and network configuration; study HTTP protocols and basic security measures through tutorials on platforms like Udacity.
+        Algorithm Capabilities Score (6): Increase understanding of core algorithms, including sorting, searching, and optimization techniques. Suggested actions: work through exercises on platforms like LeetCode and HackerRank, focusing on algorithm efficiency and complexity. Reviewing classic algorithms like binary search, mergesort, and quicksort will be beneficial.
+
+
+        Example 2: Low Scores in Programming Language, Computer Science, and Data Science
+
+        Scores: 
+        AI Capabilities Score: 9,
+        Programming Language Capabilities Score: 6,
+        Server Capabilities Score: 8,
+        Computer Science Capabilities Score: 7,
+        Data Science Capabilities Score: 6,
+        Algorithm Capabilities Score: 8
+
+        Reasoning and Advice:
+        Programming Language Capabilities Score (6): A score of 6 indicates the need to strengthen programming skills in languages like Python, Java, or C++. Suggested actions: Practice problem-solving on platforms like HackerRank and LeetCode, complete beginner and intermediate programming courses on Codecademy, and work on real-world projects like developing a calculator or a small web application to build confidence in coding syntax and debugging.
+        Computer Science Capabilities Score (7): Strengthen knowledge in data structures (e.g., arrays, hash maps) and fundamental programming principles. Suggested actions: complete exercises on LeetCode or HackerRank, and review algorithms and data structures through video tutorials on YouTube.
+        Data Science Capabilities Score (6): Develop a deeper understanding of data analysis and visualization techniques. Suggested actions: consider courses on DataCamp or edX that cover statistics, data cleaning, and visualization in Python. Practice analyzing datasets on Kaggle to build practical skills.
+
+
+        Example 3: Balanced Scores with Improvement Needed in AI and Algorithm
+
+        Scores: AI Capabilities Score: 6,
+        Programming Language Capabilities Score: 8,
+        Server Capabilities Score: 8,
+        Computer Science Capabilities Score: 9,
+        Data Science Capabilities Score: 9,
+        Algorithm Capabilities Score: 7
+
+        Reasoning and Advice:
+        AI Capabilities Score (6): Strengthen machine learning foundations, particularly supervised learning methods and neural networks. Suggested actions: take a beginner ML course (e.g., Udacity) and work on a simple prediction model project, such as sentiment analysis.
+        Algorithm Capabilities Score (7): Enhance skills in key algorithms and improve understanding of time complexity. Suggested actions: complete exercises focused on sorting and search algorithms on LeetCode, and review Big O notation and algorithm analysis through tutorials.
+
+
+        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements."""
+        )
+    
+    from langchain.chat_models import ChatOpenAI
+
+    llm = ChatOpenAI(temperature=1, model_name="gpt-3.5-turbo")
+    llm_chain = LLMChain(llm=llm, prompt=prompt)
+
+    # chain = load_qa_chain(llm, chain_type="stuff")
+    input_data = {
+        "ai_value" : skill_score['ai'],
+        "language_value" : skill_score['language'],
+        "server_value" : skill_score['server'],
+        "cs_value" : skill_score['cs'],
+        "ds_value" : skill_score['ds'],
+        "algorithm_value" : skill_score['algorithm'],
+    }
+    response = llm_chain.invoke(input=input_data)
+
+    return response['text']
+
+
+@app.get("/")
+async def hello_world():
+    return 'hello world'
+
+
+"""
+{
+"ai" : 9,
+"language" : 7,
+"server" : 6,
+"cs" : 5,
+"ds" : 6,
+"algorithm" : 7
+}
+"""
+

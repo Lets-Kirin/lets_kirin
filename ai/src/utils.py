@@ -336,4 +336,4 @@ def to_json(pre_data, past_data):
         })
 
     # JSON 데이터 출력
-    return json.dumps(result, ensure_ascii=False, indent=4)
+    return result
