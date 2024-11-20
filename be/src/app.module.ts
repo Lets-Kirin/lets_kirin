@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { CourseModule } from './course/course.module';
 import { TakenCoursesModule } from './user/taken_courses/taken_courses.module';
 import { UserModule } from './user/user.module';
+import { RecommendedTimetableModule } from './recommended-timetable/recommended-timetable.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -27,6 +30,10 @@ dotenv.config();
     UserModule,
     AuthModule,
     TakenCoursesModule,
+    RecommendedTimetableModule,
+    MulterModule.register({
+      storage: memoryStorage(),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

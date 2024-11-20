@@ -31,7 +31,7 @@ export class UserController {
     await this.userService.createUser(authCredentialDto);
   }
 
-  @Get(':id')
+  @Get()
   public async getUser(
     @GetUser() user: User,
     @Param('id') id: string,
@@ -39,13 +39,13 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
-  @Get()
-  public async getAllUsers(): Promise<User[]> {
-    return this.userService.findAll();
-  }
-
-  @Delete(':id')
+  @Delete()
   public async deleteUser(@Param('id') id: string): Promise<void> {
     await this.userService.removeUser(id);
+  }
+
+  @Get('skills')
+  async getUserSkills(@GetUser() user: User) {
+    return await this.userService.getUserSkills(user.id);
   }
 }

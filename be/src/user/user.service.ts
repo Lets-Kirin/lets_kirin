@@ -19,10 +19,6 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find();
-  }
-
   async removeUser(id: string) {
     const user = await this.findOne(id);
     if (user) {
@@ -59,6 +55,33 @@ export class UserService {
         ds: skillLevels.ds,
         ai: skillLevels.ai,
       },
+    };
+  }
+
+  async getUserSkills(userId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // skillLevels가 문자열로 저장되어 있다면 파싱
+    const skillLevels =
+      typeof user.skillLevels === 'string'
+        ? JSON.parse(user.skillLevels)
+        : user.skillLevels;
+
+    return {
+      skillLevels: {
+        ai: skillLevels.ai,
+        cs: skillLevels.cs,
+        language: skillLevels.language,
+        algorithm: skillLevels.algorithm,
+        server: skillLevels.server,
+        ds: skillLevels.ds,
+      }
     };
   }
 }
