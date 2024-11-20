@@ -1,14 +1,56 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from utils import QueryLoader, to_json
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
+# old
 """
 {
+	"coursePriority" :
+	[
+		{
+			"courseName" : "서양철학의이해",
+			"courseNumber" : "009357",
+            "sectionNumber" : "1",
+			"professorName" : "David M Hindman",
+			"courseTime" : "10:30-12:00",
+			"courseDay" : "수금",
+            "credit" : 3
+		},
+		{
+			"courseName" : "한국전통문화의이해",
+			"courseNumber" : "009356",
+            "sectionNumber" : "3",
+			"professorName" : "시지은",
+			"courseTime" : "15:00-16:30",
+			"courseDay" : "월수",
+            "credit" : 3
+		}
+	],
+
+	"timeoff" :
+	[
+		{
+			"day" : "목",
+			"time" : "9:00-11:00"
+		}
+	],
+
+        "dayoff" : ["화"],
+        "department" : "소프트웨어학과",
+        "semester" : 2,
+        "credit" : 15
+}
+"""
+
+# new
+"""
+{
+    "user_id" : "ljhmu",
 	"coursePriority" :
 	[
 		{
@@ -52,11 +94,10 @@ async def course_rec(payload: dict):
     if payload is False:
         raise HTTPException(status_code=400, detail="Input data is missing")
 
-    loader = QueryLoader(
-        payload["coursePriority"], payload["timeoff"], payload["dayoff"], payload["department"], payload["semester"]
-    )
-    credits = payload['credit'] - sum([element['credit'] for element in payload["coursePriority"]])
+    loader = QueryLoader(payload["user_id"], payload["coursePriority"], payload["timeoff"], payload["dayoff"])
+    credits = payload["credit"] - sum([element["credit"] for element in payload["coursePriority"]])
 
+    department, smester = loader.get_user_info()
 
     main_data = loader.get_main_data()
     priority_data = loader.get_priority_data()
@@ -72,7 +113,7 @@ async def course_rec(payload: dict):
         Unique Course Names: Each recommended course should have a unique course name, avoiding any duplicates.
         No Time Conflicts: Ensure that recommended courses do not overlap in time on the same course day. For instance, a course scheduled on Thursday from 4 PM to 5 PM cannot overlap with a course scheduled on Thursday from 4 PM to 6 PM.
         Recommendation Rationale: Use each courses courseDescription to explain why it was recommended.
-        Credit Match: The sum of the credits of recommended courses should closely match the user's input credit requirement. *Fill up your credit to be close to {credit} credits*
+        Credit Match: *Ensure that the sum of credits of recommended courses equals or does not exceed the user's input credit requirement. Prioritize combinations that precisely meet the target {credit} credits without exceeding it. If exact matching is not possible, select the closest lower value.* *If you get 15 credits as input, get 15 credits as much as you must can.*
         Please output the results in the following format for each recommended course: courseNumber | sectionNumber | courseName | credits | professorName | [Reason for Recommendation]
 
         Format the output strictly as follows:
@@ -85,7 +126,7 @@ async def course_rec(payload: dict):
 
         Generate a list of courses adhering to this template. *Anwer into Korean*
         {data}
-        looking at the above data, please recommend a course within {credit} credits for the {department}에""",
+        Please recommend a course as close *as possible to {credit} credits* after looking at the data above. If the given grade is 15, please recommend a course close to 15 credits. Also, please recommend a course suitable for the {department} department""",
     )
 
     from langchain.chat_models import ChatOpenAI
@@ -95,27 +136,23 @@ async def course_rec(payload: dict):
 
     # chain = load_qa_chain(llm, chain_type="stuff")
     print(main_data)
-    print('\n\n\n')
+    print("\n\n\n")
     print(credits)
-    print('\n')
-    input_data = {
-        "department":payload['department'], 
-        "credit":credits, 
-        "data":main_data
-    }
+    print("\n")
+    input_data = {"department": department, "credit": credits, "data": main_data}
 
     # def rec_table():
     response = llm_chain.invoke(input=input_data)
-        # return response
+    # return response
     # recommendation = rec_table()
-    print(response['text'])
+    print(response["text"])
     # print('\n\n')
     # print(main_data)
     # print('\n\n')
     # print(priority_data)
     # print('\n\n')
     # print(recommendation)
-    result = to_json(priority_data, response['text'])
+    result = to_json(priority_data, response["text"])
     return JSONResponse(content=jsonable_encoder(result))
 
 
@@ -125,10 +162,9 @@ async def process_data(payload: dict):
         raise HTTPException(status_code=400, detail="Input data is missing")
 
     loader = QueryLoader(
-        payload["coursePriority"], payload["timeoff"], payload["dayoff"], payload["department"], payload["semester"]
+        QueryLoader(payload["user_id"], payload["coursePriority"], payload["timeoff"], payload["dayoff"])
     )
-    credits = payload['credit'] - sum([element['credit'] for element in payload["coursePriority"]])
-
+    credits = payload["credit"] - sum([element["credit"] for element in payload["coursePriority"]])
 
     main_data = loader.get_main_data()
     priority_data = loader.get_priority_data()
@@ -136,7 +172,7 @@ async def process_data(payload: dict):
 
 
 @app.post("/skill/recommend")
-async def skill_rec(skill_score:dict):
+async def skill_rec(skill_score: dict):
     """
     {
     "ai" : 9,
@@ -148,10 +184,9 @@ async def skill_rec(skill_score:dict):
     }
     """
 
-
     print(skill_score)
     prompt = PromptTemplate(
-        input_variables=["ai_value","language_value","server_value","cs_value","ds_value","algorithm_value"],
+        input_variables=["ai_value", "language_value", "server_value", "cs_value", "ds_value", "algorithm_value"],
         template="""Analyze the software capabilities based on the following competency scores. Each score is out of 10, with 10 being the maximum. For any competency scoring below 8, identify it as an area for improvement and provide specific, actionable advice. Here are the scores:
 
         AI Capabilities Score: {ai_value}
@@ -170,7 +205,7 @@ async def skill_rec(skill_score:dict):
 
         Example 1: Moderate Scores in AI, Server, and Algorithm Capabilities
 
-        Scores: 
+        Scores:
         AI Capabilities Score: 7,
         Programming Language Capabilities Score: 9,
         Server Capabilities Score: 6,
@@ -186,7 +221,7 @@ async def skill_rec(skill_score:dict):
 
         Example 2: Low Scores in Programming Language, Computer Science, and Data Science
 
-        Scores: 
+        Scores:
         AI Capabilities Score: 9,
         Programming Language Capabilities Score: 6,
         Server Capabilities Score: 8,
@@ -214,9 +249,9 @@ async def skill_rec(skill_score:dict):
         Algorithm Capabilities Score (7): Enhance skills in key algorithms and improve understanding of time complexity. Suggested actions: complete exercises focused on sorting and search algorithms on LeetCode, and review Big O notation and algorithm analysis through tutorials.
 
 
-        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements."""
-        )
-    
+        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements.""",
+    )
+
     from langchain.chat_models import ChatOpenAI
 
     llm = ChatOpenAI(temperature=1, model_name="gpt-3.5-turbo")
@@ -224,21 +259,21 @@ async def skill_rec(skill_score:dict):
 
     # chain = load_qa_chain(llm, chain_type="stuff")
     input_data = {
-        "ai_value" : skill_score['ai'],
-        "language_value" : skill_score['language'],
-        "server_value" : skill_score['server'],
-        "cs_value" : skill_score['cs'],
-        "ds_value" : skill_score['ds'],
-        "algorithm_value" : skill_score['algorithm'],
+        "ai_value": skill_score["ai"],
+        "language_value": skill_score["language"],
+        "server_value": skill_score["server"],
+        "cs_value": skill_score["cs"],
+        "ds_value": skill_score["ds"],
+        "algorithm_value": skill_score["algorithm"],
     }
     response = llm_chain.invoke(input=input_data)
 
-    return response['text']
+    return response["text"]
 
 
 @app.get("/")
 async def hello_world():
-    return 'hello world'
+    return "hello world"
 
 
 """
@@ -251,4 +286,3 @@ async def hello_world():
 "algorithm" : 7
 }
 """
-

@@ -1,9 +1,11 @@
-import os
-import pymysql
 import json
+import os
+
+import pymysql
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 class QueryLoader:
     ABEEK = {
@@ -186,23 +188,51 @@ class QueryLoader:
         ],
     }
 
-    def __init__(self, priority_courses: dict, time_off: list, day_off: list, department: str, semester: int) -> None:
+    def __init__(self, user_id: str, priority_courses: dict, time_off: list, day_off: list) -> None:
         self.time_off = time_off
         self.connection = pymysql.connect(
-            host=os.environ.get('DB_HOST'),
-            port=int(os.environ.get('DB_PORT')),
-            user=os.environ.get('DB_USER'),
-            password=os.environ.get('DB_PASSWORD'),
-            db=os.environ.get('DB_NAME')
+            host=os.environ.get("DB_HOST"),
+            port=int(os.environ.get("DB_PORT")),
+            user=os.environ.get("DB_USER"),
+            password=os.environ.get("DB_PASSWORD"),
+            db=os.environ.get("DB_NAME"),
         )
         cursor = self.connection.cursor()
+        self.user_parsing_query = f"""
+            SELECT department, semester
+            FROM user WHERE id=\'{user_id}\'
+        """
+
+        cursor.execute(self.user_parsing_query)
+        self.user_data = cursor.fetchall()
+        self.department = self.user_data[0][0]
+        self.semester = self.user_data[0][1]
+        # self.department = "소프트웨어학과"
+        # self.semester = 2
+
+        self.user_priority_courses = f"""
+        SELECT LPAD(courseNumber, '6', 0) FROM taken_courses WHERE userid=\'{user_id}\'
+        """
+
+        cursor.execute(self.user_priority_courses)
+        user_priority_courses_data = cursor.fetchall()
+
+        if user_priority_courses_data:
+            user_priority_courses_list = "AND courseNumber NOT IN ("
+            for row in user_priority_courses_data:
+                user_priority_courses_list += f"'{row[0]}', "
+            user_priority_courses_list = user_priority_courses_list[:-2]
+            user_priority_courses_list += ")"
+        else:
+            self.user_priority_courses_query = ""
+
         for course in priority_courses:
             course["courseDay"]
             course["courseTime"]
 
         self.department_filter_query = f"""(
-            department_major=\'{department}\'
-            AND yearSemester=\'{semester}\'
+            department_major=\'{self.department}\'
+            AND yearSemester=\'{self.semester}\'
         )"""
         for course_info in priority_courses:
             element = {}
@@ -212,9 +242,11 @@ class QueryLoader:
 
         self.main_query = self.make_main_query(
             self.department_filter_query,
-            self.get_abeek_query(department, semester),
+            self.get_abeek_query(self.department, self.semester),
             self.get_time_filter(time_off, day_off),
+            self.user_priority_courses_query,
         )
+
         self.priority_course_query = self.make_priority_course_query(priority_courses)
 
         cursor.execute(self.main_query)
@@ -222,6 +254,7 @@ class QueryLoader:
 
         cursor.execute(self.priority_course_query)
         self.priority_course_results = cursor.fetchall()
+
         self.connection.commit()
         cursor.close()
         self.connection.close()
@@ -259,14 +292,13 @@ class QueryLoader:
                 AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', -1), '%H:%i') > STR_TO_DATE(\'{prefix_time}\', '%H:%i')
                 AND STR_TO_DATE(SUBSTRING_INDEX(courseTime, '-', 1), '%H:%i') < STR_TO_DATE(\'{postfix_time}\', '%H:%i')
             )"""
-                
 
         for idx in range(len(day_off)):
             time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx]}%\'"""
 
         return time_filter
 
-    def make_main_query(self, department_filter_query, abeek_query, time_filter):
+    def make_main_query(self, department_filter_query, abeek_query, time_filter, user_priority_courses_query):
         query = f"""
         SELECT courseNumber, sectionNumber, courseName, courseClassification, courseDescription, professorName, courseDay, courseTime, credits
         FROM courses
@@ -277,6 +309,7 @@ class QueryLoader:
         {department_filter_query}
         )
         {time_filter}
+        {user_priority_courses_query}
         """
         return query
 
@@ -313,9 +346,13 @@ class QueryLoader:
             priority_result += "\n"
         return priority_result
 
+    def get_user_info(self):
+        return self.department, self.semester
+
+
 def to_json(pre_data, past_data):
     data = pre_data + past_data
-    lines = data.replace('\n\n', '\n').strip().split("\n")
+    lines = data.replace("\n\n", "\n").strip().split("\n")
     result = []
     for line in lines:
         # 열 단위로 분리
@@ -325,15 +362,17 @@ def to_json(pre_data, past_data):
         course_name = parts[2]
         professor_name = parts[3]
         recommend_description = parts[4].strip("[]")
-        
+
         # JSON 객체 생성
-        result.append({
-            "courseNumber": course_number,
-            "sectionNumber": section_number,
-            "courseName": course_name,
-            "professorName": professor_name,
-            "recommendDescription": recommend_description
-        })
+        result.append(
+            {
+                "courseNumber": course_number,
+                "sectionNumber": section_number,
+                "courseName": course_name,
+                "professorName": professor_name,
+                "recommendDescription": recommend_description,
+            }
+        )
 
     # JSON 데이터 출력
     return result
