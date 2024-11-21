@@ -48,3 +48,9 @@ npm install
 ```zsh
 npm start
 ```
+
+### AI
+```bash
+pip install uv
+uv install -r ./ai/requirements.txt
+```

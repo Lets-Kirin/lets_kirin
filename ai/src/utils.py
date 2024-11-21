@@ -206,7 +206,8 @@ class QueryLoader:
         cursor.execute(self.user_parsing_query)
         self.user_data = cursor.fetchall()
         self.department = self.user_data[0][0]
-        self.semester = self.user_data[0][1]
+        self.semester = self.user_data[0][1][0]
+        print(self.semester)
         # self.department = "소프트웨어학과"
         # self.semester = 2
 

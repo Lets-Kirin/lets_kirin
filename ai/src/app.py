@@ -50,7 +50,7 @@ app = FastAPI()
 # new
 """
 {
-    "user_id" : "ljhmu",
+    "user_id" : "asdppopop",
 	"coursePriority" :
 	[
 		{
@@ -81,9 +81,7 @@ app = FastAPI()
 		}
 	],
 
-        "dayoff" : ["화"],
-        "department" : "소프트웨어학과",
-        "semester" : 2,
+        "dayoff" : [],
         "credit" : 15
 }
 """
