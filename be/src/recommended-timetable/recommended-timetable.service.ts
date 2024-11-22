@@ -34,7 +34,7 @@ export class RecommendedTimetableService {
       // AI 서비스에 보낼 데이터에 userID 추가
       const aiRequestData = {
         ...requestData,
-        userID: decodedToken.userID
+        user_id: decodedToken.userID
       };
 
       // 기존 추천 데이터 삭제
