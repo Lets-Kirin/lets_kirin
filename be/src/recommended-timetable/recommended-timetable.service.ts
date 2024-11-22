@@ -9,6 +9,7 @@ import { Courses } from '../course/course.entity';
 import { Repository } from 'typeorm';
 import { UserRepository } from 'src/user/user.repository';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class RecommendedTimetableService {
@@ -19,19 +20,31 @@ export class RecommendedTimetableService {
         @InjectRepository(Courses)
         private readonly coursesRepository: Repository<Courses>,
         private readonly httpService: HttpService,
+        private readonly jwtService: JwtService,
     ) {}
 
   // POST /recommended-timetable
-  async createRecommendation(requestData: any): Promise<ResponseDto> {
+  async createRecommendation(requestData: any, token: string): Promise<ResponseDto> {
     try {
-      // 기존 추천 데이터 삭제
-      await this.timetableRepository.deleteByUserId(requestData.userID);
+      // JWT 토큰에서 userID 추출
+      const decodedToken = this.jwtService.verify(token.replace('Bearer ', ''), {
+        secret: process.env.JWT_SECRET
+      });
+      
+      // AI 서비스에 보낼 데이터에 userID 추가
+      const aiRequestData = {
+        ...requestData,
+        userID: decodedToken.userID
+      };
 
-      // AI 서비스에 요청
+      // 기존 추천 데이터 삭제
+      await this.timetableRepository.deleteByUserId(decodedToken.userID);
+
+      console.log('AI Service URL:', process.env.AI_SERVICE_URL); // URL 확인용 로그
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
-          requestData,
+          aiRequestData,
           {
             timeout: 30000
           }
@@ -40,7 +53,7 @@ export class RecommendedTimetableService {
 
       // DB에 저장할 추천 데이터 구성
       const recommendationsForDB = aiResponse.data.result.map(course => ({
-        userID: requestData.userID,
+        userID: decodedToken.userID,
         courseName: course.courseName,
         courseNumber: course.courseNumber,
         sectionNumber: course.sectionNumber,

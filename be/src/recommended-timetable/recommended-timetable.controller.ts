@@ -26,10 +26,10 @@ export class RecommendedTimetableController {
 
   @Post()
   async createRecommendation(@Request() req, @Body() requestData: any, @GetUser() user): Promise<ResponseDto> {
-    return await this.recommendedTimetableService.createRecommendation({
-      ...requestData,
-      userID: req.user.userID
-    });
+    return await this.recommendedTimetableService.createRecommendation(
+      requestData,
+      req.headers.authorization // Add the token from request headers
+    );
   }
 
   @Delete()
