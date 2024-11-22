@@ -46,10 +46,13 @@ export class RecommendedTimetableService {
       // AI 서비스에 보낼 데이터에 userID 추가
       const aiRequestData = {
         ...requestData,
-        user_id: user.id // 직접 user의 id를 사용
+        user_id: user.id
       };
       
-      console.log('AI Request Data:', aiRequestData);
+      // JSON 문자열로 변환하여 모든 키를 큰따옴표로 묶기
+      const jsonStringData = JSON.stringify(aiRequestData);
+
+      console.log('AI Request Data:', jsonStringData);
 
       // 기존 추천 데이터 삭제
       await this.timetableRepository.deleteByUserId(user.id);
@@ -58,8 +61,11 @@ export class RecommendedTimetableService {
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
-          aiRequestData,
+          jsonStringData,  // JSON 문자열로 변환된 데이터 전송
           {
+            headers: {
+              'Content-Type': 'application/json'  // Content-Type 헤더 추가
+            },
             timeout: 30000
           }
         )
