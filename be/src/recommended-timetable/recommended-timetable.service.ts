@@ -10,6 +10,9 @@ import { Repository } from 'typeorm';
 import { UserRepository } from 'src/user/user.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Injectable()
 export class RecommendedTimetableService {
@@ -26,19 +29,30 @@ export class RecommendedTimetableService {
   // POST /recommended-timetable
   async createRecommendation(requestData: any, token: string): Promise<ResponseDto> {
     try {
-      // JWT 토큰에서 userID 추출
+      // 토큰에서 userID 추출
       const decodedToken = this.jwtService.verify(token.replace('Bearer ', ''), {
         secret: process.env.JWT_SECRET
       });
       
+      // 사용자 정보 조회
+      const user = await this.userRepository.findOne({ 
+        where: { userID: decodedToken.sub || decodedToken.userID } 
+      });
+
+      if (!user) {
+        throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
+      }
+
       // AI 서비스에 보낼 데이터에 userID 추가
       const aiRequestData = {
         ...requestData,
-        user_id: decodedToken.userID
+        user_id: user.id // 직접 user의 id를 사용
       };
+      
+      console.log('AI Request Data:', aiRequestData);
 
       // 기존 추천 데이터 삭제
-      await this.timetableRepository.deleteByUserId(decodedToken.userID);
+      await this.timetableRepository.deleteByUserId(user.id);
 
       console.log('AI Service URL:', process.env.AI_SERVICE_URL); // URL 확인용 로그
       const aiResponse = await firstValueFrom(
@@ -53,7 +67,7 @@ export class RecommendedTimetableService {
 
       // DB에 저장할 추천 데이터 구성
       const recommendationsForDB = aiResponse.data.result.map(course => ({
-        userID: decodedToken.userID,
+        userID: user.id,
         courseName: course.courseName,
         courseNumber: course.courseNumber,
         sectionNumber: course.sectionNumber,
