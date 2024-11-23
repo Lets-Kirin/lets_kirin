@@ -173,29 +173,29 @@ export class RecommendedTimetableService {
   async getUserRecommendations(userID: string): Promise<ResponseDto> {
     try {
       const recommendations = await this.timetableRepository.findByUserId(userID);
-
-      // 사용자 정보 조회
-      const user = await this.userRepository.findOne({ where: { userID } });
-      if (!user) {
-        throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
+      
+      if (!recommendations || recommendations.length === 0) {
+        return new ResponseDto(
+          false,
+          '추천된 시간표가 없습니다.',
+          null,
+          HttpStatus.NOT_FOUND
+        );
       }
-      
-      // 추천 시간표를 ID별로 그룹화
-      const groupedRecommendations = new Map<number, any[]>();
-      
-      for (const rec of recommendations) {
-        // 강의 정보 조회
-        const courseInfo = await this.coursesRepository.findOne({
-          where: {
-            courseNumber: rec.courseNumber,
-            sectionNumber: rec.sectionNumber,
-            professorName: rec.professorName
-          }
-        });
 
-        if (courseInfo) {
-          if (!groupedRecommendations.has(rec.id)) {
-            groupedRecommendations.set(rec.id, []);
+      // 추천된 과목들의 상세 정보 조회
+      const coursesWithDetails = await Promise.all(
+        recommendations.map(async (rec) => {
+          const courseInfo = await this.coursesRepository.findOne({
+            where: {
+              courseNumber: rec.courseNumber,
+              sectionNumber: rec.sectionNumber,
+              professorName: rec.professorName
+            }
+          });
+
+          if (!courseInfo) {
+            return null;
           }
 
           // 스케줄 정보 구성
@@ -213,32 +213,41 @@ export class RecommendedTimetableService {
             }
           }
 
-          groupedRecommendations.get(rec.id).push({
+          return {
             courseName: rec.courseName,
-            courseNumber: rec.courseNumber,
-            sectionNumber: rec.sectionNumber,
             professorName: rec.professorName,
-            classroom: courseInfo.classroom,
+            reasonForRecommendingClass: rec.reasonForRecommendingClass,
             schedules: schedules
-          });
+          };
+        })
+      );
+
+      // null 값 제거 및 유효한 과목만 필터링
+      const validCourses = coursesWithDetails.filter(course => course !== null);
+
+      // 첫 번째 과목의 정보로 학년/학기 정보 가져오기
+      const firstCourse = await this.coursesRepository.findOne({
+        where: {
+          courseNumber: recommendations[0].courseNumber,
+          sectionNumber: recommendations[0].sectionNumber
         }
-      }
+      });
 
       const responseData = {
-        userName: user.name,
-        fileUpload: user.fileUpload || false,
-        year: user.year || null,
-        semester: user.semester || null,
-        recommendedCourses: Array.from(groupedRecommendations.entries()).map(([id, courses]) => ({
-          courseID: id,
-          courses: courses
-        }))
+        year: Math.floor(firstCourse?.yearSemester / 10) || null, // 예: 20231 -> 2023
+        yearSemester: firstCourse?.yearSemester.toString() || null,
+        courses: validCourses
       };
 
       return new ResponseDto(
         true,
         '시간표 만들기에 성공하였습니다.',
-        responseData,
+        {
+          isSuccess: true,
+          code: 200,
+          message: '시간표 만들기에 성공하였습니다.',
+          result: responseData
+        },
         HttpStatus.OK
       );
     } catch (error) {
