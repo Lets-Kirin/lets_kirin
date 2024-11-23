@@ -86,12 +86,29 @@ app = FastAPI()
 }
 """
 
+"""
+{
+    "user_id" : "asdppopop",
+	"coursePriority" : [],
+
+	"timeoff" :
+	[
+		{
+			"day" : "목",
+			"time" : "9:00-11:00"
+		}
+	],
+
+        "dayoff" : [],
+        "credit" : 15
+}
+"""
+
 
 @app.post("/course/recommend")
 async def course_rec(payload: dict):
     if payload is False:
         raise HTTPException(status_code=400, detail="Input data is missing")
-
     loader = QueryLoader(payload["user_id"], payload["coursePriority"], payload["timeoff"], payload["dayoff"])
     credits = payload["credit"] - sum([element["credit"] for element in payload["coursePriority"]])
 
@@ -133,17 +150,14 @@ async def course_rec(payload: dict):
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     # chain = load_qa_chain(llm, chain_type="stuff")
-    print(main_data)
-    print("\n\n\n")
-    print(credits)
-    print("\n")
+
     input_data = {"department": department, "credit": credits, "data": main_data}
 
     # def rec_table():
     response = llm_chain.invoke(input=input_data)
     # return response
     # recommendation = rec_table()
-    print(response["text"])
+    # print(response["text"])
     # print('\n\n')
     # print(main_data)
     # print('\n\n')
@@ -182,7 +196,7 @@ async def skill_rec(skill_score: dict):
     }
     """
 
-    print(skill_score)
+    # print(skill_score)
     prompt = PromptTemplate(
         input_variables=["ai_value", "language_value", "server_value", "cs_value", "ds_value", "algorithm_value"],
         template="""Analyze the software capabilities based on the following competency scores. Each score is out of 10, with 10 being the maximum. For any competency scoring below 8, identify it as an area for improvement and provide specific, actionable advice. Here are the scores:

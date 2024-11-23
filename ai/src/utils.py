@@ -207,7 +207,6 @@ class QueryLoader:
         self.user_data = cursor.fetchall()
         self.department = self.user_data[0][0]
         self.semester = self.user_data[0][1][0]
-        print(self.semester)
         # self.department = "소프트웨어학과"
         # self.semester = 2
 
@@ -219,22 +218,19 @@ class QueryLoader:
         user_priority_courses_data = cursor.fetchall()
 
         if user_priority_courses_data:
-            user_priority_courses_query = "AND courseNumber NOT IN ("
+            self.user_priority_courses_query = "AND courseNumber NOT IN ("
             for row in user_priority_courses_data:
-                user_priority_courses_query += f"'{row[0]}', "
-            user_priority_courses_query = user_priority_courses_query[:-2]
-            user_priority_courses_query += ")"
+                self.user_priority_courses_query += f"'{row[0]}', "
+            self.user_priority_courses_query = self.user_priority_courses_query[:-2]
+            self.user_priority_courses_query += ")"
         else:
             self.user_priority_courses_query = ""
-
-        for course in priority_courses:
-            course["courseDay"]
-            course["courseTime"]
 
         self.department_filter_query = f"""(
             department_major=\'{self.department}\'
             AND yearSemester=\'{self.semester}\'
         )"""
+
         for course_info in priority_courses:
             element = {}
             element["day"] = course_info["courseDay"]
@@ -252,10 +248,13 @@ class QueryLoader:
 
         cursor.execute(self.main_query)
         self.main_results = cursor.fetchall()
+        if self.priority_course_query:
+            cursor.execute(self.priority_course_query)
 
-        cursor.execute(self.priority_course_query)
-        self.priority_course_results = cursor.fetchall()
-
+            self.priority_course_results = cursor.fetchall()
+        else:
+            self.priority_course_results = None
+        
         self.connection.commit()
         cursor.close()
         self.connection.close()
@@ -315,7 +314,7 @@ class QueryLoader:
         return query
 
     def make_priority_course_query(self, priority_courses) -> str:
-        if priority_courses is False:
+        if len(priority_courses) == 0:
             return None
         priority_query = """
         SELECT courseNumber, sectionNumber, courseName, professorName, courseDescription
@@ -341,18 +340,28 @@ class QueryLoader:
         return course_result
 
     def get_priority_data(self):
-        priority_result = """"""
-        for row in self.priority_course_results:
-            priority_result += " | ".join(list([str(item) for item in row]))
-            priority_result += "\n"
-        return priority_result
+        if self.priority_course_results:
+            priority_result = """"""
+            for row in self.priority_course_results:
+                priority_result += " | ".join(list([str(item) for item in row]))
+                priority_result += "\n"
+            return priority_result
+        else:
+            return None
 
     def get_user_info(self):
         return self.department, self.semester
 
 
 def to_json(pre_data, past_data):
-    data = pre_data + past_data
+    if pre_data is None:
+        data = past_data
+    elif past_data is None:
+        data = past_data
+    elif pre_data == past_data == None:
+        raise Exception('reulst is emtpy')
+    else:
+        data = pre_data + past_data
     lines = data.replace("\n\n", "\n").strip().split("\n")
     result = []
     for line in lines:
