@@ -68,31 +68,20 @@ export class RecommendedTimetableService {
         )
       );
 
-      // AI 응답 데이터 자세히 로깅
-      console.log('AI Response Status:', aiResponse.status);
-      console.log('AI Response Headers:', aiResponse.headers);
+      // AI 응답 데이터 로깅
       console.log('AI Response Data:', JSON.stringify(aiResponse.data, null, 2));
 
-      // 응답 데이터 유효성 검사 강화
-      if (!aiResponse.data) {
-        throw new Error('AI 서비스 응답에 데이터가 없습니다.');
+      // 응답이 배열인지 확인
+      if (!Array.isArray(aiResponse.data)) {
+        throw new Error('AI 서비스 응답이 배열 형식이 아닙니다.');
       }
 
-      if (!aiResponse.data.result) {
-        throw new Error('AI 서비스 응답에 result 필드가 없습니다.');
-      }
-
-      if (!Array.isArray(aiResponse.data.result)) {
-        throw new Error('AI 서비스 응답의 result가 배열이 아닙니다.');
-      }
-
-      if (aiResponse.data.result.length === 0) {
-        throw new Error('AI 서비스가 빈 결과를 반환했습니다.');
+      if (aiResponse.data.length === 0) {
+        throw new Error('AI 서비스가 추천 과목을 찾지 못했습니다.');
       }
 
       // DB에 저장할 추천 데이터 구성
-      const recommendationsForDB = aiResponse.data.result.map(course => {
-        // 각 course 객체 로깅
+      const recommendationsForDB = aiResponse.data.map(course => {
         console.log('Processing course:', course);
         return {
           userID: user.id,
@@ -115,7 +104,7 @@ export class RecommendedTimetableService {
 
       // FE에 보낼 응답 데이터 구성
       const coursesWithSchedules = await Promise.all(
-        aiResponse.data.result.map(async (course) => {
+        aiResponse.data.map(async (course) => {
           const courseInfo = await this.coursesRepository.findOne({
             where: {
               courseNumber: course.courseNumber,
