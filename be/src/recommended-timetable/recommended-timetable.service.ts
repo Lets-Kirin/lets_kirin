@@ -34,20 +34,25 @@ export class RecommendedTimetableService {
         secret: process.env.JWT_SECRET
       });
       
+      console.log('Decoded Token:', decodedToken.sub || decodedToken.userID); // 디버깅용 로그
+
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({ 
-        where: { userID: decodedToken.sub || decodedToken.userID } 
+        where: { id: decodedToken.id } 
       });
+
+      console.log('Found User:', user); // 디버깅용 로그
 
       if (!user) {
         throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
 
-      // AI 서비스에 보낼 데이터에 userID 추가
       const aiRequestData = {
+        user_id: user.id,
         ...requestData,
-        user_id: user.id
       };
+      
+      console.log('AI Request Data:', JSON.stringify(aiRequestData, null, 2));
       
       // JSON 문자열로 변환하여 모든 키를 큰따옴표로 묶기
       const jsonStringData = JSON.stringify(aiRequestData);
@@ -57,7 +62,6 @@ export class RecommendedTimetableService {
       // 기존 추천 데이터 삭제
       await this.timetableRepository.deleteByUserId(user.id);
 
-      console.log('AI Service URL:', process.env.AI_SERVICE_URL); // URL 확인용 로그
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
