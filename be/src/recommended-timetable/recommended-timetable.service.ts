@@ -74,6 +74,7 @@ export class RecommendedTimetableService {
           }
         )
       );
+      
 
       // DB에 저장할 추천 데이터 구성
       const recommendationsForDB = aiResponse.data.result.map(course => ({
