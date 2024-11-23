@@ -50,20 +50,15 @@ export class RecommendedTimetableService {
         ...requestData,
       };
       
-      console.log('AI Request Data:', JSON.stringify(aiRequestData, null, 2));
+      console.log('AI Request Data:', aiRequestData);
       
-      // JSON 문자열로 변환하여 모든 키를 큰따옴표로 묶기
-      const jsonStringData = JSON.stringify(aiRequestData, null, 2);
-
-      console.log('AI Request Data:', jsonStringData);
-
       // 기존 추천 데이터 삭제
       await this.timetableRepository.deleteByUserId(user.id);
 
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
-          jsonStringData
+          aiRequestData
         )
       );
 
