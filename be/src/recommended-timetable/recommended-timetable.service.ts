@@ -173,8 +173,10 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
+      console.log(userID);
       const recommendations = await this.timetableRepository.findByUserId(userID);
-      
+      console.log(recommendations);
+        
       if (!recommendations || recommendations.length === 0) {
         return {
           isSuccess: false,
