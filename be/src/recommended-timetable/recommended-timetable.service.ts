@@ -41,8 +41,6 @@ export class RecommendedTimetableService {
         where: { id: decodedToken.id } 
       });
 
-      console.log('Found User:', user); // 디버깅용 로그
-
       if (!user) {
         throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
@@ -55,7 +53,7 @@ export class RecommendedTimetableService {
       console.log('AI Request Data:', JSON.stringify(aiRequestData, null, 2));
       
       // JSON 문자열로 변환하여 모든 키를 큰따옴표로 묶기
-      const jsonStringData = JSON.stringify(aiRequestData);
+      const jsonStringData = JSON.stringify(aiRequestData, null, 2);
 
       console.log('AI Request Data:', jsonStringData);
 
@@ -65,16 +63,10 @@ export class RecommendedTimetableService {
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
-          jsonStringData,  // JSON 문자열로 변환된 데이터 전송
-          {
-            headers: {
-              'Content-Type': 'application/json'  // Content-Type 헤더 추가
-            },
-            timeout: 30000
-          }
+          jsonStringData
         )
       );
-      
+
 
       // DB에 저장할 추천 데이터 구성
       const recommendationsForDB = aiResponse.data.result.map(course => ({
