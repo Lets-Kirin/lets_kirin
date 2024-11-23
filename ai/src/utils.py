@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import pymysql
 from dotenv import load_dotenv
@@ -33,7 +34,7 @@ class QueryLoader:
             "건설수치해석",
         ],
         "환경에너지공간융합학과": [
-            "미적분학1",    
+            "미적분학1",
             "공업수학1",
             "일반물리학1",
             "일반화학1",
@@ -254,7 +255,7 @@ class QueryLoader:
             self.priority_course_results = cursor.fetchall()
         else:
             self.priority_course_results = None
-        
+
         self.connection.commit()
         cursor.close()
         self.connection.close()
@@ -341,10 +342,11 @@ class QueryLoader:
 
     def get_priority_data(self):
         if self.priority_course_results:
-            priority_result = """"""
+            priority_result = ""
             for row in self.priority_course_results:
+                priority_result += "#"
                 priority_result += " | ".join(list([str(item) for item in row]))
-                priority_result += "\n"
+                priority_result += "#\n"
             return priority_result
         else:
             return None
@@ -359,12 +361,17 @@ def to_json(pre_data, past_data):
     elif past_data is None:
         data = past_data
     elif pre_data == past_data == None:
-        raise Exception('reulst is emtpy')
+        raise Exception("reulst is emtpy")
     else:
         data = pre_data + past_data
-    lines = data.replace("\n\n", "\n").strip().split("\n")
+
+    matches = re.findall(r"#(.*?)#", data)
+
+    print("\n\n")
+    print(matches)
+    # lines = data.replace("\n\n", "\n").strip().split("\n")
     result = []
-    for line in lines:
+    for line in matches:
         # 열 단위로 분리
         parts = line.split(" | ")
         course_number = parts[0]
