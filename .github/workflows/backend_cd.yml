@@ -21,3 +21,6 @@ jobs:
       env:
         DOCKER_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
       run: sudo docker run -d -p 3000:3000 --env-file /etc/lets_kirin/.env --name lets_kirin-api-container ${DOCKER_USERNAME}/lets_kirin-api
+
+    - name: Remove old images
+      run: sudo docker image prune -f
