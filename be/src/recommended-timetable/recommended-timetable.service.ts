@@ -173,9 +173,16 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
-      console.log(userID);
-      const recommendations = await this.timetableRepository.findByUserId(userID);
-      console.log(recommendations);
+      // 사용자 정보 조회
+      const user = await this.userRepository.findOne({
+        where: { id: userID }
+      });
+
+      if (!user) {
+        throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
+      }
+        
+      const recommendations = await this.timetableRepository.findByUserId(user.id);
         
       if (!recommendations || recommendations.length === 0) {
         return {
@@ -185,15 +192,6 @@ export class RecommendedTimetableService {
           fileUpload: false,
           result: null
         };
-      }
-
-      // 사용자 정보 조회
-      const user = await this.userRepository.findOne({
-        where: { id: userID }
-      });
-
-      if (!user) {
-        throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
 
       // 추 번째 과목의 정보로 학기 정보 가져오기
