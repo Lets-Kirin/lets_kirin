@@ -33,7 +33,7 @@ class QueryLoader:
             "건설수치해석",
         ],
         "환경에너지공간융합학과": [
-            "미적분학1",
+            "미적분학1",    
             "공업수학1",
             "일반물리학1",
             "일반화학1",
@@ -219,11 +219,11 @@ class QueryLoader:
         user_priority_courses_data = cursor.fetchall()
 
         if user_priority_courses_data:
-            user_priority_courses_list = "AND courseNumber NOT IN ("
+            user_priority_courses_query = "AND courseNumber NOT IN ("
             for row in user_priority_courses_data:
-                user_priority_courses_list += f"'{row[0]}', "
-            user_priority_courses_list = user_priority_courses_list[:-2]
-            user_priority_courses_list += ")"
+                user_priority_courses_query += f"'{row[0]}', "
+            user_priority_courses_query = user_priority_courses_query[:-2]
+            user_priority_courses_query += ")"
         else:
             self.user_priority_courses_query = ""
 
