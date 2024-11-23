@@ -190,7 +190,7 @@ export class RecommendedTimetableService {
           code: 404,
           message: '추천된 시간표가 없습니다.',
           fileUpload: false,
-          result: null
+          result: []
         };
       }
 
