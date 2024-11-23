@@ -175,7 +175,7 @@ export class RecommendedTimetableService {
     try {
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({
-        where: { id: userID }
+        where: { userID: userID }
       });
 
       if (!user) {
