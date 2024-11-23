@@ -58,20 +58,51 @@ export class RecommendedTimetableService {
       const aiResponse = await firstValueFrom(
         this.httpService.post(
           process.env.AI_SERVICE_URL + "/course/recommend",
-          aiRequestData
+          aiRequestData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000 // 30초 타임아웃 설정
+          }
         )
       );
 
+      // AI 응답 데이터 자세히 로깅
+      console.log('AI Response Status:', aiResponse.status);
+      console.log('AI Response Headers:', aiResponse.headers);
+      console.log('AI Response Data:', JSON.stringify(aiResponse.data, null, 2));
+
+      // 응답 데이터 유효성 검사 강화
+      if (!aiResponse.data) {
+        throw new Error('AI 서비스 응답에 데이터가 없습니다.');
+      }
+
+      if (!aiResponse.data.result) {
+        throw new Error('AI 서비스 응답에 result 필드가 없습니다.');
+      }
+
+      if (!Array.isArray(aiResponse.data.result)) {
+        throw new Error('AI 서비스 응답의 result가 배열이 아닙니다.');
+      }
+
+      if (aiResponse.data.result.length === 0) {
+        throw new Error('AI 서비스가 빈 결과를 반환했습니다.');
+      }
 
       // DB에 저장할 추천 데이터 구성
-      const recommendationsForDB = aiResponse.data.result.map(course => ({
-        userID: user.id,
-        courseName: course.courseName,
-        courseNumber: course.courseNumber,
-        sectionNumber: course.sectionNumber,
-        professorName: course.professorName,
-        reasonForRecommendingClass: course.recommendDescription
-      }));
+      const recommendationsForDB = aiResponse.data.result.map(course => {
+        // 각 course 객체 로깅
+        console.log('Processing course:', course);
+        return {
+          userID: user.id,
+          courseName: course.courseName,
+          courseNumber: course.courseNumber,
+          sectionNumber: course.sectionNumber,
+          professorName: course.professorName,
+          reasonForRecommendingClass: course.recommendDescription
+        };
+      });
 
       // DB에 저장
       await Promise.all(
@@ -134,15 +165,17 @@ export class RecommendedTimetableService {
         HttpStatus.OK
       );
     } catch (error) {
-      console.error('Error in createRecommendation:', error);
+      console.error('AI Service Error Details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: process.env.AI_SERVICE_URL + "/course/recommend",
+        requestData: requestData
+      });
+
       throw new HttpException(
-        new ResponseDto(
-          false,
-          '시간표 추천 생성에 실패했습니다.',
-          null,
-          HttpStatus.INTERNAL_SERVER_ERROR
-        ),
-        HttpStatus.INTERNAL_SERVER_ERROR
+        `AI 서비스 연결에 실패했습니다: ${error.message}`,
+        HttpStatus.SERVICE_UNAVAILABLE
       );
     }
   }
