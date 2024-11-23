@@ -115,13 +115,14 @@ export class RecommendedTimetableService {
 
           const schedules = [];
           if (courseInfo?.courseDay && courseInfo?.courseTime) {
-            const days = courseInfo.courseDay.split(',');
+            const combinedDays = courseInfo.courseDay.replace(/[,\s]+/g, ''); // "월수" 형태의 문자열
             const times = courseInfo.courseTime.split(',');
             
-            for (let i = 0; i < days.length; i++) {
+            for (let i = 0; i < combinedDays.length; i++) {
+              const singleDay = combinedDays.charAt(i); // 한 글자씩 분리 ("월", "수" 등)
               schedules.push({
-                courseDay: days[i].trim(),
-                courseTime: times[i].trim(),
+                courseDay: singleDay,
+                courseTime: times[0].trim(), // 같은 시간대 사용
                 classroom: courseInfo.classroom
               });
             }
@@ -201,13 +202,14 @@ export class RecommendedTimetableService {
           // 스케줄 정보 구성
           const schedules = [];
           if (courseInfo.courseDay && courseInfo.courseTime) {
-            const days = courseInfo.courseDay.split(',');
+            const combinedDays = courseInfo.courseDay.replace(/[,\s]+/g, ''); // "월수" 형태의 문자열
             const times = courseInfo.courseTime.split(',');
             
-            for (let i = 0; i < days.length; i++) {
+            for (let i = 0; i < combinedDays.length; i++) {
+              const singleDay = combinedDays.charAt(i); // 한 글자씩 분리 ("월", "수" 등)
               schedules.push({
-                courseDay: days[i].trim(),
-                courseTime: times[i].trim(),
+                courseDay: singleDay,
+                courseTime: times[0].trim(), // 같은 시간대 사용
                 classroom: courseInfo.classroom
               });
             }
