@@ -185,8 +185,9 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
-      console.log("userID : ", userID);
-      // 사용자 정보 직접 조회
+      console.log("Received userID:", userID);
+      
+      // 사용자 정보 조회
       const user = await this.userRepository.findOne({ 
         where: { userID: userID } 
       });
@@ -200,12 +201,16 @@ export class RecommendedTimetableService {
           result: null
         };
       }
+
+      console.log("Found user:", user);
         
-      // 추천 시간표 조회
+      // 추천 시간표 조회 - userID(UUID) 사용
       const recommendations = await this.timetableRepository.find({
-        where: { userID: user.id },
+        where: { userID: user.userID },  // user.id가 아닌 user.userID 사용
         order: { id: 'ASC' }
       });
+
+      console.log("Found recommendations:", recommendations);
 
       // 추천 시간표가 없는 경우
       if (!recommendations || recommendations.length === 0) {
