@@ -222,15 +222,34 @@ class QueryLoader:
             self.user_priority_courses_query = "AND courseNumber NOT IN ("
             for row in user_priority_courses_data:
                 self.user_priority_courses_query += f"'{row[0]}', "
+            for course_info in priority_courses:
+                self.user_priority_courses_query += f"'{course_info['courseNumber']}', "
             self.user_priority_courses_query = self.user_priority_courses_query[:-2]
             self.user_priority_courses_query += ")"
         else:
             self.user_priority_courses_query = ""
 
-        self.department_filter_query = f"""(
-            department_major=\'{self.department}\'
-            AND yearSemester=\'{self.semester}\'
-        )"""
+
+        def generate_query(department, semester):
+            # 입력값이 1~4 범위에 있는지 확인
+            semester = int(semester)
+            if semester >=4: semester = 4
+            if semester < 1 or semester > 4:
+                raise ValueError("Input must be an integer between 1 and 4.")
+            
+            # filter의 범위를 설정 (1~4로 제한)
+            start = max(1, semester - 1)  # 하한: 입력값 - 1, 최소값은 1
+            end = min(4, semester + 1)    # 상한: 입력값 + 1, 최대값은 4
+            
+            # SQL 쿼리문 생성
+            query = f"""(
+                    department_major=\'{department}\'
+                    AND yearSemester >= {start} AND yearSemester <= {end}
+                )"""
+            return query
+        print(self.department, self.semester, type(self.semester))
+        self.department_filter_query = generate_query(self.department, self.semester)
+        print(self.department_filter_query)
 
         for course_info in priority_courses:
             element = {}
@@ -255,6 +274,16 @@ class QueryLoader:
             self.priority_course_results = cursor.fetchall()
         else:
             self.priority_course_results = None
+
+        print(self.priority_course_query)
+        print('\n\n')
+        print(self.main_query)
+        print('\n\n')
+        print(self.main_results)
+        print('\n\n')
+        print(self.main_results)
+        print('\n\n')
+
 
         self.connection.commit()
         cursor.close()
@@ -301,7 +330,7 @@ class QueryLoader:
 
     def make_main_query(self, department_filter_query, abeek_query, time_filter, user_priority_courses_query):
         query = f"""
-        SELECT courseNumber, sectionNumber, courseName, courseClassification, courseDescription, professorName, courseDay, courseTime, credits
+        SELECT courseNumber, sectionNumber, courseName, courseClassification, yearSemester, courseDescription, professorName, courseDay, courseTime, credits
         FROM courses
         WHERE
         (
@@ -344,9 +373,9 @@ class QueryLoader:
         if self.priority_course_results:
             priority_result = ""
             for row in self.priority_course_results:
-                priority_result += "#"
+                priority_result += "$"
                 priority_result += " | ".join(list([str(item) for item in row]))
-                priority_result += "#\n"
+                priority_result += "$\n"
             return priority_result
         else:
             return None
@@ -364,8 +393,8 @@ def to_json(pre_data, past_data):
         raise Exception("reulst is emtpy")
     else:
         data = pre_data + past_data
-
-    matches = re.findall(r"#(.*?)#", data)
+    print(data)
+    matches = re.findall(r"\$(.*?)\$", data)
 
     print("\n\n")
     print(matches)
