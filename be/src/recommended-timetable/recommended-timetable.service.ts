@@ -37,7 +37,7 @@ export class RecommendedTimetableService {
       const user = await this.userRepository.findOne({ 
         where: { id: decodedToken.id } 
       });
-
+      
       if (!user) {
         throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
@@ -71,10 +71,16 @@ export class RecommendedTimetableService {
         throw new Error('AI 서비스가 추천 과목을 찾지 못했습니다.');
       }
 
+      // DB에 저장 전 로그 추가
+      console.log('User Info:', {
+        id: user.id,
+        userID: user.userID,
+        name: user.name
+      });
+
       // DB에 저장
       const recommendationEntity = this.timetableRepository.create({
-        userID: user.userID,
-        user: user,
+        userID: user.id,
         courses: aiResponse.data.map(course => ({
           courseName: course.courseName,
           courseNumber: course.courseNumber,
@@ -83,6 +89,8 @@ export class RecommendedTimetableService {
           reasonForRecommendingClass: course.recommendDescription
         }))
       });
+
+      console.log('Created Entity:', recommendationEntity); // 생성된 엔티티 로그
 
       const savedRecommendation = await this.timetableRepository.save(recommendationEntity);
 
@@ -156,6 +164,7 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
+      console.log("userID : ", userID);
       // 사용자 정보 직접 조회
       const user = await this.userRepository.findOne({ 
         where: { userID: userID } 
