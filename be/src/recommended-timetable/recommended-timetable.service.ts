@@ -49,18 +49,39 @@ export class RecommendedTimetableService {
       
       console.log('AI Request Data:', aiRequestData);
 
-      const aiResponse = await firstValueFrom(
-        this.httpService.post(
-          process.env.AI_SERVICE_URL + "/course/recommend",
-          aiRequestData,
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000 // 30초 타임아웃 설정
+      // AI 서비스 호출 재시도 로직
+      let aiResponse;
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1초 대기
+
+      while (retryCount < maxRetries) {
+        try {
+          aiResponse = await firstValueFrom(
+            this.httpService.post(
+              process.env.AI_SERVICE_URL + "/course/recommend",
+              aiRequestData,
+              {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                timeout: 30000 // 30초 타임아웃 설정
+              }
+            )
+          );
+          break; // 성공하면 반복 중단
+        } catch (error) {
+          retryCount++;
+          console.log(`AI 서비스 호출 실패 (${retryCount}/${maxRetries}):`, error.message);
+          
+          if (retryCount === maxRetries) {
+            throw new Error(`AI 서비스 연결 실패 (${maxRetries}회 시도)`);
           }
-        )
-      );
+          
+          // 다음 시도 전 대기
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
 
       // 응답이 배열인지 확인
       if (!Array.isArray(aiResponse.data)) {
@@ -254,8 +275,8 @@ export class RecommendedTimetableService {
         isSuccess: true,
         code: 200,
         message: '시간표 조회에 성공하였습니다.',
-        fileUpload: user.fileUpload,
         result: {
+          fileUpload: user.fileUpload,
           userName: user.name,
           year: parseInt(user.year),
           semester: user.semester,
@@ -269,8 +290,9 @@ export class RecommendedTimetableService {
         isSuccess: false,
         code: 500,
         message: '시간표 추천 조회에 실패했습니다.',
-        fileUpload: false,
-        result: null
+        result: {
+          fileUpload: false,
+        }
       };
     }
   }
