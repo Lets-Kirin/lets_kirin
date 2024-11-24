@@ -28,21 +28,15 @@ export class RecommendedTimetableService {
     token: string,
   ): Promise<ResponseDto> {
     try {
-      // 토큰에서 userID 추출
-      const decodedToken = this.jwtService.verify(
-        token.replace('Bearer ', ''),
-        {
-          secret: process.env.JWT_SECRET,
-        },
-      );
-
-      console.log('Decoded Token:', decodedToken.sub || decodedToken.userID); // 디버깅용 로그
-
+      const decodedToken = this.jwtService.verify(token.replace('Bearer ', ''), {
+        secret: process.env.JWT_SECRET
+      });
+      
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({
         where: { id: decodedToken.id },
       });
-
+      
       if (!user) {
         throw new HttpException(
           '사용자를 찾을 수 없습니다.',
@@ -57,27 +51,39 @@ export class RecommendedTimetableService {
 
       console.log('AI Request Data:', aiRequestData);
 
-      // 기존 추천 데이터 삭제
-      await this.timetableRepository.deleteByUserId(user.id);
+      // AI 서비스 호출 재시도 로직
+      let aiResponse;
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 1000; // 1초 대기
 
-      const aiResponse = await firstValueFrom(
-        this.httpService.post(
-          process.env.AI_SERVICE_URL + '/course/recommend',
-          aiRequestData,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            timeout: 30000, // 30초 타임아웃 설정
-          },
-        ),
-      );
-
-      // AI 응답 데이터 로깅
-      console.log(
-        'AI Response Data:',
-        JSON.stringify(aiResponse.data, null, 2),
-      );
+      while (retryCount < maxRetries) {
+        try {
+          aiResponse = await firstValueFrom(
+            this.httpService.post(
+              process.env.AI_SERVICE_URL + "/course/recommend",
+              aiRequestData,
+              {
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                timeout: 30000 // 30초 타임아웃 설정
+              }
+            )
+          );
+          break; // 성공하면 반복 중단
+        } catch (error) {
+          retryCount++;
+          console.log(`AI 서비스 호출 실패 (${retryCount}/${maxRetries}):`, error.message);
+          
+          if (retryCount === maxRetries) {
+            throw new Error(`AI 서비스 연결 실패 (${maxRetries}회 시도)`);
+          }
+          
+          // 다음 시도 전 대기
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
 
       // 응답이 배열인지 확인
       if (!Array.isArray(aiResponse.data)) {
@@ -88,27 +94,28 @@ export class RecommendedTimetableService {
         throw new Error('AI 서비스가 추천 과목을 찾지 못했습니다.');
       }
 
-      // DB에 저장할 추천 데이터 구성
-      const recommendationsForDB = aiResponse.data.map((course) => {
-        console.log('Processing course:', course);
-        return {
-          userID: user.id,
-          courseName: course.courseName,
-          courseNumber: course.courseNumber,
-          sectionNumber: course.sectionNumber,
-          professorName: course.professorName,
-          reasonForRecommendingClass: course.recommendDescription,
-        };
+      // DB에 저장 전 로그 추가
+      console.log('User Info:', {
+        id: user.id,
+        userID: user.userID,
+        name: user.name
       });
 
       // DB에 저장
-      await Promise.all(
-        recommendationsForDB.map((recommendation) =>
-          this.timetableRepository.save(
-            this.timetableRepository.create(recommendation),
-          ),
-        ),
-      );
+      const recommendationEntity = this.timetableRepository.create({
+        userID: user.id,
+        courses: aiResponse.data.map(course => ({
+          courseName: course.courseName,
+          courseNumber: course.courseNumber,
+          sectionNumber: parseInt(course.sectionNumber),
+          professorName: course.professorName,
+          reasonForRecommendingClass: course.recommendDescription
+        }))
+      });
+
+      console.log('Created Entity:', recommendationEntity); // 생성된 엔티티 로그
+
+      const savedRecommendation = await this.timetableRepository.save(recommendationEntity);
 
       // FE에 보낼 응답 데이터 구성
       const coursesWithSchedules = await Promise.all(
@@ -147,20 +154,19 @@ export class RecommendedTimetableService {
         }),
       );
 
-      const responseData = {
-        isSuccess: true,
-        code: 200,
-        message: '시간표 만들기에 성공하였습니다.',
-        result: {
-          courses: coursesWithSchedules,
-        },
-      };
-
       return new ResponseDto(
         true,
         '시간표 추천에 성공했습니다.',
-        responseData,
-        HttpStatus.OK,
+        {
+          isSuccess: true,
+          code: 200,
+          message: '시간표 만들기에 성공하였습니다.',
+          result: {
+            courseID: savedRecommendation.id,
+            courses: coursesWithSchedules
+          }
+        },
+        HttpStatus.OK
       );
     } catch (error) {
       console.error('AI Service Error Details:', {
@@ -181,69 +187,73 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
-      const recommendations =
-        await this.timetableRepository.findByUserId(userID);
+      console.log("Received userID:", userID);
+      
+      // 사용자 정보 조회
+      const user = await this.userRepository.findOne({ 
+        where: { userID: userID } 
+      });
 
-      if (!recommendations || recommendations.length === 0) {
+      if (!user) {
         return {
           isSuccess: false,
           code: 404,
-          message: '추천된 시간표가 없습니다.',
+          message: '사용자를 찾을 수 없습니다.',
           fileUpload: false,
           result: null,
         };
       }
 
-      // 사용자 정보 조회
-      const user = await this.userRepository.findOne({
-        where: { id: userID },
+      console.log("Found user:", user);
+        
+      // 추천 시간표 조회 - userID(UUID) 사용
+      const recommendations = await this.timetableRepository.find({
+        where: { userID: user.userID },  // user.id가 아닌 user.userID 사용
+        order: { id: 'ASC' }
       });
 
-      if (!user) {
-        throw new HttpException(
-          '사용자를 찾을 수 없습니다.',
-          HttpStatus.NOT_FOUND,
-        );
+      console.log("Found recommendations:", recommendations);
+
+      // 추천 시간표가 없는 경우
+      if (!recommendations || recommendations.length === 0) {
+        return {
+          isSuccess: true,
+          code: 200,
+          message: '추천된 시간표가 없습니다.',
+          result: {
+            fileUpload: user.fileUpload,
+            userName: user.name,
+            year: parseInt(user.year),
+            semester: user.semester,
+            recommendedCourses: []
+          }
+        };
       }
 
-      // 추 번째 과목의 정보로 학기 정보 가져오기
-      const firstCourseInfo = await this.coursesRepository.findOne({
-        where: {
-          courseNumber: recommendations[0].courseNumber,
-          sectionNumber: recommendations[0].sectionNumber,
-        },
-      });
-
-      // 추천된 과목들의 상세 정보 조회
+      // 추천 시간표 변환
       const recommendedCourses = await Promise.all(
-        recommendations.map(async (_, index) => {
-          const coursesForThisRecommendation = await Promise.all(
-            recommendations.map(async (rec) => {
+        recommendations.map(async (recommendation) => {
+          const coursesWithDetails = await Promise.all(
+            recommendation.courses.map(async (course) => {
               const courseInfo = await this.coursesRepository.findOne({
                 where: {
-                  courseNumber: rec.courseNumber,
-                  sectionNumber: rec.sectionNumber,
-                  professorName: rec.professorName,
-                },
+                  courseNumber: course.courseNumber,
+                  sectionNumber: course.sectionNumber,
+                  professorName: course.professorName
+                }
               });
 
-              if (!courseInfo) {
-                return null;
-              }
+              if (!courseInfo) return null;
 
               // 스케줄 정보 구성
               const schedules = [];
               if (courseInfo.courseDay && courseInfo.courseTime) {
-                const combinedDays = courseInfo.courseDay.replace(
-                  /[,\s]+/g,
-                  '',
-                );
+                const days = courseInfo.courseDay.replace(/[,\s]+/g, '');
                 const times = courseInfo.courseTime.split(',');
-
-                for (let i = 0; i < combinedDays.length; i++) {
-                  const singleDay = combinedDays.charAt(i);
+                
+                for (let i = 0; i < days.length; i++) {
                   schedules.push({
-                    courseDay: singleDay,
+                    courseDay: days.charAt(i),
                     courseTime: times[0].trim(),
                     classroom: courseInfo.classroom,
                   });
@@ -251,10 +261,10 @@ export class RecommendedTimetableService {
               }
 
               return {
-                courseName: rec.courseName,
-                courseNumber: rec.courseNumber,
-                sectionNumber: rec.sectionNumber,
-                professorName: rec.professorName,
+                courseName: course.courseName,
+                courseNumber: course.courseNumber,
+                sectionNumber: course.sectionNumber,
+                professorName: course.professorName,
                 classroom: courseInfo.classroom,
                 schedules: schedules,
               };
@@ -262,10 +272,8 @@ export class RecommendedTimetableService {
           );
 
           return {
-            courseID: index + 1,
-            courses: coursesForThisRecommendation.filter(
-              (course) => course !== null,
-            ),
+            courseID: recommendation.id,
+            courses: coursesWithDetails.filter(course => course !== null)
           };
         }),
       );
@@ -273,9 +281,9 @@ export class RecommendedTimetableService {
       return {
         isSuccess: true,
         code: 200,
-        message: '시간표 만들기에 성공하였습니다.',
-        fileUpload: user.fileUpload,
+        message: '시간표 조회에 성공하였습니다.',
         result: {
+          fileUpload: user.fileUpload,
           userName: user.name,
           year: parseInt(user.year),
           semester: user.semester,
@@ -288,39 +296,75 @@ export class RecommendedTimetableService {
         isSuccess: false,
         code: 500,
         message: '시간표 추천 조회에 실패했습니다.',
-        fileUpload: false,
-        result: null,
+        result: {
+          fileUpload: false,
+        }
       };
     }
   }
 
-  async deleteUserRecommendations(userID: string): Promise<ResponseDto> {
+  async deleteUserRecommendations(userID: string, courseId: number): Promise<ResponseDto> {
     try {
-      const result = await this.timetableRepository.delete({ userID });
+      // 사용자 확인 - userID(uuid)로 조회
+      const user = await this.userRepository.findOne({
+        where: { userID: userID }
+      });
 
+      if (!user) {
+        return new ResponseDto(
+          false,
+          '사용자를 찾을 수 없습니다.',
+          null,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // 특정 시간표가 해당 사용자의 것인지 확인 - user.id(로그인 ID)로 조회
+      const recommendation = await this.timetableRepository.findOne({
+        where: {
+          id: courseId,
+          userID: user.id  // RecommendedTimetable의 userID는 User의 id(로그인 ID)와 매칭
+        }
+      });
+
+      if (!recommendation) {
+        return new ResponseDto(
+          false,
+          '삭제할 시간표를 찾을 수 없거나 권한이 없습니다.',
+          null,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // 해당 시간표 삭제
+      const result = await this.timetableRepository.delete({
+        id: courseId,
+        userID: user.id  // 마찬가지로 user.id 사용
+      });
+      
       if (result.affected === 0) {
         return new ResponseDto(
           false,
-          '삭제할 시간표 추천이 없습니다.',
-          '시간표 추천 없음',
-          HttpStatus.NOT_FOUND,
+          '시간표 삭제에 실패했습니다.',
+          null,
+          HttpStatus.INTERNAL_SERVER_ERROR
         );
       }
 
       return new ResponseDto(
         true,
-        '시간표 추천 삭제에 성공했습니다.',
-        '시간표 추천 삭제 성공',
-        HttpStatus.OK,
+        '시간표가 성공적으로 삭제되었습니다.',
+        null,
+        HttpStatus.OK
       );
     } catch (error) {
       console.error('Error in deleteUserRecommendations:', error);
       throw new HttpException(
         new ResponseDto(
           false,
-          '시간표 추천 삭제 중 오류가 발생했습니다.',
-          '시간표 추천 삭제 실패',
-          HttpStatus.INTERNAL_SERVER_ERROR,
+          '시간표 삭제 중 오류가 발생했습니다.',
+          null,
+          HttpStatus.INTERNAL_SERVER_ERROR
         ),
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

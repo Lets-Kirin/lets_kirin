@@ -13,18 +13,18 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
     courses: any[],
   ): Promise<RecommendedTimetable[]> {
     try {
-      const recommendations = courses.map((course) =>
-        this.create({
-          userID,
+      const recommendation = this.create({
+        userID,
+        courses: courses.map(course => ({
           courseName: course.courseName,
           courseNumber: course.courseNumber,
           sectionNumber: course.sectionNumber,
           professorName: course.professorName,
-          reasonForRecommendingClass: course.reasonForRecommendingClass,
-        }),
-      );
+          reasonForRecommendingClass: course.reasonForRecommendingClass
+        }))
+      });
 
-      return await this.save(recommendations);
+      return [await this.save(recommendation)];
     } catch (error) {
       console.error('Error in createRecommendations:', error);
       throw new HttpException(
