@@ -206,7 +206,7 @@ export class RecommendedTimetableService {
         
       // 추천 시간표 조회 - userID(UUID) 사용
       const recommendations = await this.timetableRepository.find({
-        where: { userID: user.userID },  // user.id가 아닌 user.userID 사용
+        where: { userID: user.id },  // user.id가 아닌 user.userID 사용
         order: { id: 'ASC' }
       });
 
