@@ -51,9 +51,6 @@ export class RecommendedTimetableService {
       };
       
       console.log('AI Request Data:', aiRequestData);
-      
-      // 기존 추천 데이터 삭제
-      await this.timetableRepository.deleteByUserId(user.id);
 
       const aiResponse = await firstValueFrom(
         this.httpService.post(
@@ -175,14 +172,18 @@ export class RecommendedTimetableService {
     try {
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({
-        where: { userID: userID }
+        where: { id: userID }
       });
 
       if (!user) {
         throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
         
-      const recommendations = await this.timetableRepository.findByUserId(user.id);
+      // 모든 추천 시간표 조회
+      const recommendations = await this.timetableRepository.find({
+        where: { userID: user.id },
+        order: { id: 'ASC' } // ID 기준으로 정렬
+      });
         
       if (!recommendations || recommendations.length === 0) {
         return {
@@ -190,23 +191,31 @@ export class RecommendedTimetableService {
           code: 404,
           message: '추천된 시간표가 없습니다.',
           fileUpload: false,
-          result: []
+          result: null
         };
       }
 
-      // 추 번째 과목의 정보로 학기 정보 가져오기
-      const firstCourseInfo = await this.coursesRepository.findOne({
-        where: {
-          courseNumber: recommendations[0].courseNumber,
-          sectionNumber: recommendations[0].sectionNumber
-        }
-      });
+      // 추천 시간표들을 그룹화
+      const groupedRecommendations = recommendations.reduce((acc, curr) => {
+        const existingGroup = acc.find(group => 
+          group.some(item => 
+            Math.abs(item.id - curr.id) < recommendations.length / 2
+          )
+        );
 
-      // 추천된 과목들의 상세 정보 조회
+        if (existingGroup) {
+          existingGroup.push(curr);
+        } else {
+          acc.push([curr]);
+        }
+        return acc;
+      }, []);
+
+      // 각 그룹을 처리하여 recommendedCourses 생성
       const recommendedCourses = await Promise.all(
-        recommendations.map(async (_, index) => {
+        groupedRecommendations.map(async (group, groupIndex) => {
           const coursesForThisRecommendation = await Promise.all(
-            recommendations.map(async (rec) => {
+            group.map(async (rec) => {
               const courseInfo = await this.coursesRepository.findOne({
                 where: {
                   courseNumber: rec.courseNumber,
@@ -247,11 +256,19 @@ export class RecommendedTimetableService {
           );
 
           return {
-            courseID: index + 1,
+            courseID: groupIndex + 1,
             courses: coursesForThisRecommendation.filter(course => course !== null)
           };
         })
       );
+
+      // 첫 번째 과목의 정보로 학기 정보 가져오기
+      const firstCourseInfo = await this.coursesRepository.findOne({
+        where: {
+          courseNumber: recommendations[0].courseNumber,
+          sectionNumber: recommendations[0].sectionNumber
+        }
+      });
 
       return {
         isSuccess: true,
