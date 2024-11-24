@@ -31,7 +31,7 @@ export class User extends BaseEntity {
   grade: string;
 
   @Column({
-    default: ''
+    default: '',
   })
   updateTime: string;
 

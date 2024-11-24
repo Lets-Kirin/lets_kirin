@@ -15,4 +15,4 @@ export class RecommendedCourseSetDto {
 
 export class TimetableResponseDto {
   recommendedCourses: RecommendedCourseSetDto[];
-} 
+}

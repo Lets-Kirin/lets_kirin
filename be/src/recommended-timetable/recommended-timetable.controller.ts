@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Delete, 
-  Body, 
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
   UseGuards,
-  Request
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RecommendedTimetableService } from './recommended-timetable.service';
@@ -21,19 +21,27 @@ export class RecommendedTimetableController {
 
   @Get()
   async getUserRecommendations(@Request() req): Promise<ResponseDto> {
-    return await this.recommendedTimetableService.getUserRecommendations(req.user.userID);
+    return await this.recommendedTimetableService.getUserRecommendations(
+      req.user.userID,
+    );
   }
 
   @Post()
-  async createRecommendation(@Request() req, @Body() requestData: any, @GetUser() user): Promise<ResponseDto> {
+  async createRecommendation(
+    @Request() req,
+    @Body() requestData: any,
+    @GetUser() user,
+  ): Promise<ResponseDto> {
     return await this.recommendedTimetableService.createRecommendation(
       requestData,
-      req.headers.authorization // Add the token from request headers
+      req.headers.authorization, // Add the token from request headers
     );
   }
 
   @Delete()
   async deleteUserRecommendations(@Request() req): Promise<ResponseDto> {
-    return await this.recommendedTimetableService.deleteUserRecommendations(req.user.userID);
+    return await this.recommendedTimetableService.deleteUserRecommendations(
+      req.user.userID,
+    );
   }
 }

@@ -62,8 +62,6 @@ export class TakenCoursesService {
     }
   }
 
-  
-
   async uploadExcel(
     file: Express.Multer.File,
     userId: string,
@@ -87,7 +85,7 @@ export class TakenCoursesService {
       // 기존 수강 과목 삭제
       await this.takenCoursesRepository.delete({ userId });
 
-      console.log(file)
+      console.log(file);
 
       const workbook = XLSX.read(file.buffer, { type: 'buffer' });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];

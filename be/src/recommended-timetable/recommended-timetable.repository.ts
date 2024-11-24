@@ -8,17 +8,20 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
     super(RecommendedTimetable, dataSource.createEntityManager());
   }
 
-  async createRecommendations(userID: string, courses: any[]): Promise<RecommendedTimetable[]> {
+  async createRecommendations(
+    userID: string,
+    courses: any[],
+  ): Promise<RecommendedTimetable[]> {
     try {
-      const recommendations = courses.map(course => 
+      const recommendations = courses.map((course) =>
         this.create({
           userID,
           courseName: course.courseName,
           courseNumber: course.courseNumber,
           sectionNumber: course.sectionNumber,
           professorName: course.professorName,
-          reasonForRecommendingClass: course.reasonForRecommendingClass
-        })
+          reasonForRecommendingClass: course.reasonForRecommendingClass,
+        }),
       );
 
       return await this.save(recommendations);
@@ -26,7 +29,7 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
       console.error('Error in createRecommendations:', error);
       throw new HttpException(
         'Failed to save recommendations',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -35,13 +38,13 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
     try {
       return await this.find({
         where: { userID },
-        order: { id: 'DESC' }
+        order: { id: 'DESC' },
       });
     } catch (error) {
       console.error('Error in findByUserId:', error);
       throw new HttpException(
         'Failed to find recommendations',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -53,8 +56,8 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
       console.error('Error in deleteByUserId:', error);
       throw new HttpException(
         'Failed to delete recommendations',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
-} 
+}

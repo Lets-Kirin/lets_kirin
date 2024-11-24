@@ -81,7 +81,7 @@ export class UserService {
         algorithm: skillLevels.algorithm,
         server: skillLevels.server,
         ds: skillLevels.ds,
-      }
+      },
     };
   }
 }
