@@ -5,7 +5,9 @@ import {
   Delete, 
   Body, 
   UseGuards,
-  Request
+  Request,
+  Param,
+  Headers
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RecommendedTimetableService } from './recommended-timetable.service';
@@ -32,8 +34,12 @@ export class RecommendedTimetableController {
     );
   }
 
-  @Delete()
-  async deleteUserRecommendations(@Request() req): Promise<ResponseDto> {
-    return await this.recommendedTimetableService.deleteUserRecommendations(req.user.userID);
+  @Delete(':courseId')
+  async deleteRecommendation(
+    @Param('courseId') courseId: number,
+    @Headers('Authorization') token: string
+  ): Promise<ResponseDto> {
+    const userId = token; // 토큰이 실제로는 userId라고 했으므로
+    return this.recommendedTimetableService.deleteUserRecommendations(userId, courseId);
   }
 }

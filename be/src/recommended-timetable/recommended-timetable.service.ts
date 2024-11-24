@@ -272,23 +272,58 @@ export class RecommendedTimetableService {
     }
   }
 
-  async deleteUserRecommendations(userID: string): Promise<ResponseDto> {
+  async deleteUserRecommendations(userID: string, courseId: number): Promise<ResponseDto> {
     try {
-      const result = await this.timetableRepository.delete({ userID });
+      // 사용자 확인 - userID(uuid)로 조회
+      const user = await this.userRepository.findOne({
+        where: { userID: userID }
+      });
+
+      if (!user) {
+        return new ResponseDto(
+          false,
+          '사용자를 찾을 수 없습니다.',
+          null,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // 특정 시간표가 해당 사용자의 것인지 확인 - user.id(로그인 ID)로 조회
+      const recommendation = await this.timetableRepository.findOne({
+        where: {
+          id: courseId,
+          userID: user.id  // RecommendedTimetable의 userID는 User의 id(로그인 ID)와 매칭
+        }
+      });
+
+      if (!recommendation) {
+        return new ResponseDto(
+          false,
+          '삭제할 시간표를 찾을 수 없거나 권한이 없습니다.',
+          null,
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      // 해당 시간표 삭제
+      const result = await this.timetableRepository.delete({
+        id: courseId,
+        userID: user.id  // 마찬가지로 user.id 사용
+      });
       
       if (result.affected === 0) {
         return new ResponseDto(
           false,
-          '삭제할 시간표 추천이 없습니다.',
-          '시간표 추천 없음',
-          HttpStatus.NOT_FOUND
+          '시간표 삭제에 실패했습니다.',
+          null,
+          HttpStatus.INTERNAL_SERVER_ERROR
         );
       }
 
       return new ResponseDto(
         true,
-        '시간표 추천 삭제에 성공했습니다.',
-        '시간표 추천 삭제 성공',
+        '시간표가 성공적으로 삭제되었습니다.',
+        null,
         HttpStatus.OK
       );
     } catch (error) {
@@ -296,8 +331,8 @@ export class RecommendedTimetableService {
       throw new HttpException(
         new ResponseDto(
           false,
-          '시간표 추천 삭제 중 오류가 발생했습니다.',
-          '시간표 추천 삭제 실패',
+          '시간표 삭제 중 오류가 발생했습니다.',
+          null,
           HttpStatus.INTERNAL_SERVER_ERROR
         ),
         HttpStatus.INTERNAL_SERVER_ERROR
