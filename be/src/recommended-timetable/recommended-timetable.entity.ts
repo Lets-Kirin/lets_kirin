@@ -9,18 +9,12 @@ export class RecommendedTimetable extends BaseEntity {
   @Column()
   userID: string;
 
-  @Column()
-  courseName: string;
-
-  @Column()
-  courseNumber: string;
-
-  @Column()
-  sectionNumber: number;
-
-  @Column()
-  professorName: string;
-
-  @Column('text')
-  reasonForRecommendingClass: string;
+  @Column('simple-json')
+  courses: {
+    courseName: string;
+    courseNumber: string;
+    sectionNumber: number;
+    professorName: string;
+    reasonForRecommendingClass: string;
+  }[];
 }
