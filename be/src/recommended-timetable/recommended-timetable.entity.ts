@@ -9,10 +9,6 @@ export class RecommendedTimetable extends BaseEntity {
   @Column()
   userID: string;
 
-  @ManyToOne(() => User, user => user.id)
-  @JoinColumn({ name: 'userID' })
-  user: User;
-
   @Column('simple-json')
   courses: {
     courseName: string;
