@@ -189,8 +189,8 @@ export class RecommendedTimetableService {
           isSuccess: true,
           code: 200,
           message: '추천된 시간표가 없습니다.',
-          fileUpload: user.fileUpload,
           result: {
+            fileUpload: user.fileUpload,
             userName: user.name,
             year: parseInt(user.year),
             semester: user.semester,
