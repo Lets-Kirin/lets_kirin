@@ -27,11 +27,15 @@ export class RecommendedTimetableService {
     ) {}
 
   // POST /recommended-timetable
-  async createRecommendation(requestData: any, userId: string): Promise<ResponseDto> {
+  async createRecommendation(requestData: any, token: string): Promise<ResponseDto> {
     try {
+      const decodedToken = this.jwtService.verify(token.replace('Bearer ', ''), {
+        secret: process.env.JWT_SECRET
+      });
+      
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({ 
-        where: { id: userId } 
+        where: { id: decodedToken.id } 
       });
       
       if (!user) {
