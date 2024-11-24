@@ -34,7 +34,7 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
   async findByUserId(userID: string): Promise<RecommendedTimetable[]> {
     try {
       return await this.find({
-        where: { userID },
+        where: { userID: userID },
         order: { id: 'DESC' }
       });
     } catch (error) {

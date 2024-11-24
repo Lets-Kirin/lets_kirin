@@ -201,13 +201,15 @@ export class RecommendedTimetableService {
           result: null
         };
       }
-
-      console.log("Found user:", user);
         
       // 추천 시간표 조회 - userID(UUID) 사용
-      const recommendations = await this.timetableRepository.find({
-        where: { userID: user.id },  // user.id가 아닌 user.userID 사용
-        order: { id: 'ASC' }
+      const recommendations = await this.timetableRepository.findByUserId(user.id);
+
+      // courses가 null이거나 유효하지 않은 JSON인 경우 빈 배열로 처리
+      recommendations.forEach(recommendation => {
+        if (!recommendation.courses || typeof recommendation.courses !== 'object') {
+          recommendation.courses = [];
+        }
       });
 
       console.log("Found recommendations:", recommendations);
