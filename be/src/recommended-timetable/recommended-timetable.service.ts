@@ -29,13 +29,10 @@ export class RecommendedTimetableService {
   // POST /recommended-timetable
   async createRecommendation(requestData: any, token: string): Promise<ResponseDto> {
     try {
-      // 토큰에서 userID 추출
       const decodedToken = this.jwtService.verify(token.replace('Bearer ', ''), {
         secret: process.env.JWT_SECRET
       });
       
-      console.log('Decoded Token:', decodedToken.sub || decodedToken.userID); // 디버깅용 로그
-
       // 사용자 정보 조회
       const user = await this.userRepository.findOne({ 
         where: { id: decodedToken.id } 
@@ -65,9 +62,6 @@ export class RecommendedTimetableService {
         )
       );
 
-      // AI 응답 데이터 로깅
-      console.log('AI Response Data:', JSON.stringify(aiResponse.data, null, 2));
-
       // 응답이 배열인지 확인
       if (!Array.isArray(aiResponse.data)) {
         throw new Error('AI 서비스 응답이 배열 형식이 아닙니다.');
@@ -79,17 +73,18 @@ export class RecommendedTimetableService {
 
       // DB에 저장
       const recommendationEntity = this.timetableRepository.create({
-        userID: user.id,
+        userID: user.userID,
+        user: user,
         courses: aiResponse.data.map(course => ({
           courseName: course.courseName,
           courseNumber: course.courseNumber,
-          sectionNumber: course.sectionNumber,
+          sectionNumber: parseInt(course.sectionNumber),
           professorName: course.professorName,
           reasonForRecommendingClass: course.recommendDescription
         }))
       });
 
-      await this.timetableRepository.save(recommendationEntity);
+      const savedRecommendation = await this.timetableRepository.save(recommendationEntity);
 
       // FE에 보낼 응답 데이터 구성
       const coursesWithSchedules = await Promise.all(
@@ -128,19 +123,18 @@ export class RecommendedTimetableService {
         })
       );
 
-      const responseData = {
-        isSuccess: true,
-        code: 200,
-        message: '시간표 만들기에 성공하였습니다.',
-        result: {
-          courses: coursesWithSchedules
-        }
-      };
-
       return new ResponseDto(
         true,
         '시간표 추천에 성공했습니다.',
-        responseData,
+        {
+          isSuccess: true,
+          code: 200,
+          message: '시간표 만들기에 성공하였습니다.',
+          result: {
+            courseID: savedRecommendation.id,
+            courses: coursesWithSchedules
+          }
+        },
         HttpStatus.OK
       );
     } catch (error) {
