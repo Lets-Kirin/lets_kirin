@@ -162,32 +162,44 @@ export class RecommendedTimetableService {
   // GET /recommended-timetable
   async getUserRecommendations(userID: string): Promise<any> {
     try {
-      // 사용자 정보 조회
-      const user = await this.userRepository.findOne({
-        where: { id: userID }
+      // 사용자 정보 직접 조회
+      const user = await this.userRepository.findOne({ 
+        where: { userID: userID } 
       });
 
       if (!user) {
-        throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
+        return {
+          isSuccess: false,
+          code: 404,
+          message: '사용자를 찾을 수 없습니다.',
+          fileUpload: false,
+          result: null
+        };
       }
         
-      // 모든 추천 시간표 조회
+      // 추천 시간표 조회
       const recommendations = await this.timetableRepository.find({
         where: { userID: user.id },
         order: { id: 'ASC' }
       });
-        
+
+      // 추천 시간표가 없는 경우
       if (!recommendations || recommendations.length === 0) {
         return {
           isSuccess: true,
           code: 200,
           message: '추천된 시간표가 없습니다.',
           fileUpload: user.fileUpload,
-          result: []
+          result: {
+            userName: user.name,
+            year: parseInt(user.year),
+            semester: user.semester,
+            recommendedCourses: []
+          }
         };
       }
 
-      // 각 추천 시간표의 과목 정보 처리
+      // 추천 시간표 변환
       const recommendedCourses = await Promise.all(
         recommendations.map(async (recommendation) => {
           const coursesWithDetails = await Promise.all(
@@ -200,20 +212,17 @@ export class RecommendedTimetableService {
                 }
               });
 
-              if (!courseInfo) {
-                return null;
-              }
+              if (!courseInfo) return null;
 
               // 스케줄 정보 구성
               const schedules = [];
               if (courseInfo.courseDay && courseInfo.courseTime) {
-                const combinedDays = courseInfo.courseDay.replace(/[,\s]+/g, '');
+                const days = courseInfo.courseDay.replace(/[,\s]+/g, '');
                 const times = courseInfo.courseTime.split(',');
                 
-                for (let i = 0; i < combinedDays.length; i++) {
-                  const singleDay = combinedDays.charAt(i);
+                for (let i = 0; i < days.length; i++) {
                   schedules.push({
-                    courseDay: singleDay,
+                    courseDay: days.charAt(i),
                     courseTime: times[0].trim(),
                     classroom: courseInfo.classroom
                   });
@@ -231,23 +240,17 @@ export class RecommendedTimetableService {
             })
           );
 
-          return coursesWithDetails.filter(course => course !== null);
+          return {
+            courseID: recommendation.id,
+            courses: coursesWithDetails.filter(course => course !== null)
+          };
         })
       );
-
-      // 첫 번째 과목의 정보로 학기 정보 가져오기
-      const firstCourse = recommendations[0].courses[0];
-      const firstCourseInfo = await this.coursesRepository.findOne({
-        where: {
-          courseNumber: firstCourse.courseNumber,
-          sectionNumber: firstCourse.sectionNumber
-        }
-      });
 
       return {
         isSuccess: true,
         code: 200,
-        message: '시간표 만들기에 성공하였습니다.',
+        message: '시간표 조회에 성공하였습니다.',
         fileUpload: user.fileUpload,
         result: {
           userName: user.name,
