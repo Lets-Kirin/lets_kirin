@@ -22,7 +22,8 @@
       "@common/*": ["src/common/*"],
       "@auth/*": ["src/auth/*"],
       "@user/*": ["src/user/*"],
-      "@course/*": ["src/course/*"]
+      "@course/*": ["src/course/*"],
+      "@recommended-timetable/*": ["src/recommended-timetable/*"]
     }
   }
 }

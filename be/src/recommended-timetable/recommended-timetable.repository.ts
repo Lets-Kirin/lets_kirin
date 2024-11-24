@@ -15,13 +15,13 @@ export class RecommendedTimetableRepository extends Repository<RecommendedTimeta
     try {
       const recommendation = this.create({
         userID,
-        courses: courses.map(course => ({
+        courses: courses.map((course) => ({
           courseName: course.courseName,
           courseNumber: course.courseNumber,
           sectionNumber: course.sectionNumber,
           professorName: course.professorName,
-          reasonForRecommendingClass: course.reasonForRecommendingClass
-        }))
+          reasonForRecommendingClass: course.reasonForRecommendingClass,
+        })),
       });
 
       return [await this.save(recommendation)];

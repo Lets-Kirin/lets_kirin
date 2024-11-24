@@ -1,18 +1,18 @@
+import { GetUser } from '@auth/get-user.decorator';
+import { ResponseDto } from '@common/dto/response.dto';
 import {
-  Controller,
-  Post,
-  Get,
-  Delete,
   Body,
-  UseGuards,
-  Request,
+  Controller,
+  Delete,
+  Get,
+  Headers,
   Param,
-  Headers
+  Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { RecommendedTimetableService } from './recommended-timetable.service';
-import { ResponseDto } from '../common/dto/response.dto';
-import { GetUser } from 'src/auth/get-user.decorator';
+import { RecommendedTimetableService } from '@recommended-timetable/recommended-timetable.service';
 
 @Controller('recommended-timetable')
 @UseGuards(AuthGuard('jwt'))
@@ -32,7 +32,6 @@ export class RecommendedTimetableController {
   async createRecommendation(
     @Request() req,
     @Body() requestData: any,
-    @GetUser() user,
   ): Promise<ResponseDto> {
     return await this.recommendedTimetableService.createRecommendation(
       requestData,
@@ -43,9 +42,12 @@ export class RecommendedTimetableController {
   @Delete(':courseId')
   async deleteRecommendation(
     @Param('courseId') courseId: number,
-    @Headers('Authorization') token: string
+    @Headers('Authorization') token: string,
   ): Promise<ResponseDto> {
     const userId = token; // 토큰이 실제로는 userId라고 했으므로
-    return this.recommendedTimetableService.deleteUserRecommendations(userId, courseId);
+    return this.recommendedTimetableService.deleteUserRecommendations(
+      userId,
+      courseId,
+    );
   }
 }

@@ -16,31 +16,31 @@ export class CourseController {
 
   @Post('upload')
   create(@Body() courseData: Partial<Courses>): Promise<Courses> {
-    return this.courseService.create(courseData);
+    return this.courseService.createCourse(courseData);
   }
 
   @Get('findOne/:id')
   findOne(@Param('id') id: string): Promise<Courses> {
-    return this.courseService.findOne(+id);
+    return this.courseService.findCourseById(+id);
   }
 
   @Get('findAll')
   findAll(): Promise<Courses[]> {
-    return this.courseService.findAll();
+    return this.courseService.findAllCourses();
   }
 
   @Delete('remove/:id')
   remove(@Param('id') id: string): Promise<void> {
-    return this.courseService.remove(+id);
+    return this.courseService.removeCourse(+id);
   }
 
   @Get('timetable')
-  async getTimetable() {
-    return this.courseService.getTimetable();
+  async getTimeTable() {
+    return this.courseService.getTimeTable();
   }
 
   @Get('search')
   async search(@Query('query') query: string) {
-    return this.courseService.search(query);
+    return this.courseService.searchCourses(query);
   }
 }

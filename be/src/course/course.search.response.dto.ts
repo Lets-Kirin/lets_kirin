@@ -1,3 +1,5 @@
+import { Courses } from './course.entity';
+
 export class CourseSearchResponseDto {
   id: number;
   department_major: string;
@@ -11,8 +13,7 @@ export class CourseSearchResponseDto {
   courseTime: string;
   classroom: string;
 
-  constructor(course: any) {
-    // 엔티티로부터 DTO를 생성하는 생성자
+  constructor(course: Courses) {
     this.id = course.id;
     this.department_major = course.department_major;
     this.courseNumber = course.courseNumber;
