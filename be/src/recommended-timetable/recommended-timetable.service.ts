@@ -42,9 +42,18 @@ export class RecommendedTimetableService {
         throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
       }
 
+      const modifiedRequestData = {
+        ...requestData,
+        coursePriority: requestData.coursePriority.map(course => ({
+          ...course,
+          courseTime: course.courseTime.replace('~', '-')
+        }))
+      };
+      //console.log('Modified Request Data:', modifiedRequestData);
+
       const aiRequestData = {
         user_id: user.id,
-        ...requestData,
+        ...modifiedRequestData
       };
       
       console.log('AI Request Data:', aiRequestData);
