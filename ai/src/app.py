@@ -10,6 +10,7 @@ from langchain.prompts import PromptTemplate
 from utils import QueryLoader, to_json
 
 app = FastAPI()
+load_dotenv()
 
 # old
 """
@@ -168,7 +169,7 @@ async def course_rec(payload: dict):
         Please help me select courses according to these rules:
 
         Priority Order: Recommend courses following this courseClassification order: '전기', '전필', '전선', '기필', ETC...
-        Semester Order: Recommend courses following this order: low semester to high semester
+        Semester Order: Recommend courses follo wing this order: low semester to high semester
         Unique Course Names: Each recommended course should have a unique course name, avoiding any duplicates.
         No Time Conflicts: Ensure that recommended courses do not overlap in time on the same course day. For instance, a course scheduled on Thursday from 4 PM to 5 PM cannot overlap with a course scheduled on Thursday from 4 PM to 6 PM.
         Recommendation Rationale: Use each courses courseDescription to explain why it was recommended.
@@ -176,7 +177,7 @@ async def course_rec(payload: dict):
         When generating responses, ensure that no Markdown formatting elements such as ###, ##, or * are included in the text.
         Please output the results in the following format for each recommended course: $courseNumber | sectionNumber | courseName | credits | professorName | [Reason for Recommendation]$
 
-        
+
         Format the output strictly as follows:
         $courseNumber | sectionNumber | courseName | professorName | [Reason for Recommendation based on course description]$
 
@@ -192,7 +193,6 @@ async def course_rec(payload: dict):
             """,
     )
 
-    load_dotenv()
     llm = ChatOpenAI(temperature=1, model_name="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
@@ -309,12 +309,15 @@ async def skill_rec(skill_score: dict):
         Algorithm Capabilities Score (7): Enhance skills in key algorithms and improve understanding of time complexity. Suggested actions: complete exercises focused on sorting and search algorithms on LeetCode, and review Big O notation and algorithm analysis through tutorials.
 
 
-        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements.""",
+        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements.
+        *Anser to Korean*""",
     )
+    from dotenv import load_dotenv
 
-    from langchain.chat_models import ChatOpenAI
+    load_dotenv()
 
-    llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+    # llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+    llm = ChatOpenAI(temperature=1, model_name="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     # chain = load_qa_chain(llm, chain_type="stuff")

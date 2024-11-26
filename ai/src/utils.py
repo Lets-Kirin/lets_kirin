@@ -229,24 +229,25 @@ class QueryLoader:
         else:
             self.user_priority_courses_query = ""
 
-
         def generate_query(department, semester):
             # 입력값이 1~4 범위에 있는지 확인
             semester = int(semester)
-            if semester >=4: semester = 4
+            if semester >= 4:
+                semester = 4
             if semester < 1 or semester > 4:
                 raise ValueError("Input must be an integer between 1 and 4.")
-            
+
             # filter의 범위를 설정 (1~4로 제한)
             start = max(1, semester - 1)  # 하한: 입력값 - 1, 최소값은 1
-            end = min(4, semester + 1)    # 상한: 입력값 + 1, 최대값은 4
-            
+            end = min(4, semester + 1)  # 상한: 입력값 + 1, 최대값은 4
+
             # SQL 쿼리문 생성
             query = f"""(
                     department_major=\'{department}\'
                     AND yearSemester >= {start} AND yearSemester <= {end}
                 )"""
             return query
+
         print(self.department, self.semester, type(self.semester))
         self.department_filter_query = generate_query(self.department, self.semester)
         print(self.department_filter_query)
@@ -276,14 +277,13 @@ class QueryLoader:
             self.priority_course_results = None
 
         print(self.priority_course_query)
-        print('\n\n')
+        print("\n\n")
         print(self.main_query)
-        print('\n\n')
+        print("\n\n")
         print(self.main_results)
-        print('\n\n')
+        print("\n\n")
         print(self.main_results)
-        print('\n\n')
-
+        print("\n\n")
 
         self.connection.commit()
         cursor.close()
@@ -356,7 +356,7 @@ class QueryLoader:
             (
                 courseName = \'{course_info['courseName']}\'
                 AND courseNumber = \'{course_info['courseNumber']}\'
-                AND sectionNumber = \'{course_info['sectionNumber']}\'
+                AND sectionNumber = \'{int(course_info['sectionNumber'])}\'
                 AND professorName = \'{course_info['professorName']}\'
             )
             OR"""
