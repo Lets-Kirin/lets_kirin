@@ -8,7 +8,7 @@ on:
   
 jobs:
   deploy:
-    runs-on: [self-hosted, Linux, x64]
+    runs-on: self-hosted
 
     steps:
     - name: Pull Docker image
