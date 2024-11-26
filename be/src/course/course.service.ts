@@ -117,7 +117,7 @@ export class CourseService {
       where: { courseName: Like(`%${trimmedQuery}%`) },
       order: { courseName: 'ASC' },
     });
-
+    
     return courses.map((course) => new CourseSearchResponseDto(course));
   }
 }

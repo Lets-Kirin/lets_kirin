@@ -22,9 +22,7 @@ export class CourseSearchResponseDto {
     this.credits = course.credits;
     this.professorName = course.professorName;
     this.courseDay = course.courseDay;
-    this.courseTime = course.courseTime
-      ? course.courseTime.replace('-', '~')
-      : course.courseTime;
+    this.courseTime = course.courseTime;
     this.classroom = course.classroom;
   }
 }

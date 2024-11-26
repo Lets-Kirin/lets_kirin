@@ -53,7 +53,7 @@ export class RecommendedTimetableService {
 
       const aiRequestData = {
         user_id: user.id,
-        ...modifiedRequestData
+        ...requestData
       };
       
       console.log('AI Request Data:', aiRequestData);
