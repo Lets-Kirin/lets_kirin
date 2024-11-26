@@ -7,16 +7,18 @@ on:
         - completed
   
 jobs:
-  build:
-    runs-on: self-hosted
+  deploy:
+    runs-on: [self-hosted, Linux, x64]
 
     steps:
     - name: Pull Docker image
       env:
         DOCKER_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
       run: sudo docker pull ${DOCKER_USERNAME}/lets_kirin-api:latest
+      
     - name: Delete Old docker container
       run: sudo docker rm -f lets_kirin-api-container || true
+      
     - name: Run Docker Container
       env:
         DOCKER_USERNAME: ${{secrets.DOCKERHUB_USERNAME}}
