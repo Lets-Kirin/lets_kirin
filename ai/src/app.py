@@ -150,6 +150,7 @@ load_dotenv()
 
 @app.post("/course/recommend")
 async def course_rec(payload: dict):
+    print(payload)
     if payload is False:
         raise HTTPException(status_code=400, detail="Input data is missing")
     loader = QueryLoader(payload["user_id"], payload["coursePriority"], payload["timeoff"], payload["dayoff"])

@@ -356,7 +356,7 @@ class QueryLoader:
             (
                 courseName = \'{course_info['courseName']}\'
                 AND courseNumber = \'{course_info['courseNumber']}\'
-                AND sectionNumber = \'{int(course_info['sectionNumber'])}\'
+                AND sectionNumber = \'{str(course_info['sectionNumber'])}\'
                 AND professorName = \'{course_info['professorName']}\'
             )
             OR"""
