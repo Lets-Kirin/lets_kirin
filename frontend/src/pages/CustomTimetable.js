@@ -58,11 +58,16 @@ function CustomTimetable() {
                     .filter(course => course.courseName && course.professorName && course.courseTime) // 필터링 조건
                     .map(course => ({
                         courseName: course.courseName,
+                        courseNumber: course.courseNumber,
+                        sectionNumber: course.sectionNumber,
                         professorName: course.professorName,
                         courseTime: course.courseTime,
                         courseDay: course.courseDay,
+                        credit: course.credits,
                         classroom: course.classroom,
-                        courseNumber: course.courseNumber
+                        id: course.id,
+                        department_major: course.department_major,
+                        courseClassification: course.courseClassification
                     })),
                 timeoff: timeoffArray
                     .filter(timeoff => timeoff.day && timeoff.time)
@@ -119,7 +124,7 @@ function CustomTimetable() {
         else {
             return;
         }
-    }xi
+    }
     // 30분 단위로 시간 옵션 생성
     const generateTimeOptions = () => {
         const options = [];
@@ -190,6 +195,7 @@ function CustomTimetable() {
     useEffect(() => {
         if (location.state && location.state.item) { // 수업 선택하는 페이지에서 커스텀 페이지 이동 시, 선택한 수업을 추가해서 리스트를 받아옴
             setCourseArray(location.state.item);
+            console.log(location.state.item[0]);
             setCredit(location.state.credit);
             setDayoff(location.state.dayoff);
             setTimeoffArray(location.state.timeoff);
