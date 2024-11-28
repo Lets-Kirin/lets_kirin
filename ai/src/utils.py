@@ -306,7 +306,7 @@ class QueryLoader:
     def get_time_filter(self, time_off, day_off):
         time_filter = """"""
         for idx in range(len(time_off)):
-            filter_day = time_off[idx]["day"]
+            filter_day = time_off[idx]["day"].replace('요일', '')
             prefix_time = time_off[idx]["time"].split("-")[0]
             postfix_time = time_off[idx]["time"].split("-")[1]
             if len(filter_day) == 1:
@@ -324,7 +324,7 @@ class QueryLoader:
             )"""
 
         for idx in range(len(day_off)):
-            time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx]}%\'"""
+            time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx].replace('요일', '')}%\'"""
 
         return time_filter
 
