@@ -117,7 +117,7 @@ function CustomTimetable() {
         if (compareTime()) {
             setTimeoffArray(prev =>
                 prev.map((item, i) =>
-                    i === idx ? { day: timeState.day, time: `${timeState.startTime} ~ ${timeState.endTime}` } : item));
+                    i === idx ? { day: timeState.day, time: `${timeState.startTime}-${timeState.endTime}` } : item));
             clearTime();
             setTimeoffModal(false);
         }
@@ -310,7 +310,7 @@ function CustomTimetable() {
                                     ))}
                                 </select>
                             </div>
-                            ~
+                            -
                             <div>
                                 <p>종료:</p>
                                 <select value={timeState.endTime} onChange={(e) => updateEndTime(e.target.value)}>
