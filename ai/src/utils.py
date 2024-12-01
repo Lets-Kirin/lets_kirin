@@ -8,6 +8,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+ADVISE_KEY_MAPPING = {
+    "AI Capabilities Score": "ai",
+    "Programming Language Capabilities Score": "language",
+    "Server Capabilities Score": "server",
+    "Computer Science Capabilities Score": "cs",
+    "Data Science Capabilities Score": "ds",
+    "Algorithm Capabilities Score": "algorithm"
+}
+
+
 class QueryLoader:
     ABEEK = {
         #'학과' : ['과목']
@@ -217,7 +227,7 @@ class QueryLoader:
 
         cursor.execute(self.user_priority_courses)
         user_priority_courses_data = cursor.fetchall()
-
+        
         if user_priority_courses_data:
             self.user_priority_courses_query = "AND courseNumber NOT IN ("
             for row in user_priority_courses_data:
@@ -228,6 +238,7 @@ class QueryLoader:
             self.user_priority_courses_query += ")"
         else:
             self.user_priority_courses_query = ""
+        print(self.user_priority_courses_query)
 
         def generate_query(department, semester):
             # 입력값이 1~4 범위에 있는지 확인
@@ -253,11 +264,12 @@ class QueryLoader:
         print(self.department_filter_query)
 
         for course_info in priority_courses:
+            if not course_info["courseDay"]: continue
             element = {}
             element["day"] = course_info["courseDay"]
             element["time"] = course_info["courseTime"]
             time_off.append(element)
-
+        print(time_off)
         self.main_query = self.make_main_query(
             self.department_filter_query,
             self.get_abeek_query(self.department, self.semester),
@@ -421,4 +433,31 @@ def to_json(pre_data, past_data):
         )
 
     # JSON 데이터 출력
+    return result
+
+
+def capability_advise_to_json(input_text):
+        # Extracting the sections using regex
+    print(input_text)
+    matches = re.findall(r"\$(.*?)\$", input_text)
+    print(matches)
+    # Preparing the intermediate dictionary
+    extracted_data = {}
+    for match in matches:
+        # Split each section into score and description
+        parts = match.split("|")
+        # if len(parts) == 2:  # Ensuring it has both score and description
+        key = parts[0].strip()
+        score = parts[1].strip()
+        description = parts[2].strip()
+        extracted_data[key] = (score, description)
+    
+    print(extracted_data)
+    # Mapping keys to new names
+    result = {}
+    for original_key, new_key in ADVISE_KEY_MAPPING.items():
+        if original_key in extracted_data:
+            result[new_key] = extracted_data[original_key]
+    print(result)
+    # Returning the result as a JSON string
     return result

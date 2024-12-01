@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from utils import QueryLoader, to_json
+from utils import QueryLoader, to_json, capability_advise_to_json
 
 app = FastAPI()
 load_dotenv()
@@ -124,7 +124,7 @@ load_dotenv()
 		}
 	],
 
-        "dayoff" : [],
+        "dayoff" : ["화"],
         "credit" : 15
 }
 """
@@ -188,9 +188,9 @@ async def course_rec(payload: dict):
         $10103 | 1 | NLP | [This course is essential for understanding basic programming principles.]$
 
         Generate a list of courses adhering to this template. *Anwer into Korean*
-        Put $ before and after the recommended subject
+        Must Put $ before and after the recommended subject!
         {data}
-        Please recommend a course as close *as possible to {credit} credits* after looking at the data above. If the given grade is 15, please recommend a course close to 15 credits. Also, please recommend a course suitable for the {department} department and {semester} semester
+        Must recommend a course as close *as possible to {credit} credits* after looking at the data above. If the given grade is 15, please recommend a course close to 15 credits. Also, please recommend a course suitable for the {department} department and {semester} semester.
             """,
     )
 
@@ -248,72 +248,86 @@ async def skill_rec(skill_score: dict):
     # print(skill_score)
     prompt = PromptTemplate(
         input_variables=["ai_value", "language_value", "server_value", "cs_value", "ds_value", "algorithm_value"],
-        template="""Analyze the software capabilities based on the following competency scores. Each score is out of 10, with 10 being the maximum. For any competency scoring below 8, identify it as an area for improvement and provide specific, actionable advice. Here are the scores:
+        template="""Analyze the software capabilities based on the following competency scores. Each score is out of 30, with 30 being the maximum. For any competency scoring below 24, identify it as an area for improvement and provide specific, actionable advice. If the score is 8 or higher, acknowledge it as a strength and provide encouragement.
 
-        AI Capabilities Score: {ai_value}
-        Programming Language Capabilities Score: {language_value}
-        Server Capabilities Score: {server_value}
-        Computer Science Capabilities Score: {cs_value}
-        Data Science Capabilities Score: {ds_value}
-        Algorithm Capabilities Score: {algorithm_value}
+    Competency Scores:
+    - AI Capabilities Score: {ai_value}
+    - Programming Language Capabilities Score: {language_value}
+    - Server Capabilities Score: {server_value}
+    - Computer Science Capabilities Score: {cs_value}
+    - Data Science Capabilities Score: {ds_value}
+    - Algorithm Capabilities Score: {algorithm_value}
 
-        Step-by-Step Analysis with Examples:
-        Step 1: Identify scores below 8 and label them as improvement areas.
-        Step 2: For each identified area, analyze what key skills or knowledge are essential but may be lacking based on the score.
-        Step 3: Suggest specific ways to build on these skills, such as resources, learning strategies, or types of projects to pursue.
+    Step-by-Step Analysis:
+    1. Identify scores below 24 and label them as areas for improvement.
+    2. For each area, analyze what key skills or knowledge are essential but may be lacking based on the score.
+    3. Suggest specific ways to build on these skills, including resources, learning strategies, or types of projects to pursue.
+    4. For scores of 24 or higher, acknowledge them as strengths and provide words of encouragement to maintain or further enhance the proficiency.
 
-        Examples of Analysis:
+    Output Format:$Score | advice$
+    
+    Examples of Analysis:
 
-        Example 1: Moderate Scores in AI, Server, and Algorithm Capabilities
+    Example 1:
+    Competency Scores:
+    - AI Capabilities Score: 21
+    - Programming Language Capabilities Score: 27
+    - Server Capabilities Score: 18
+    - Computer Science Capabilities Score: 24
+    - Data Science Capabilities Score: 24
+    - Algorithm Capabilities Score: 18
 
-        Scores:
-        AI Capabilities Score: 7,
-        Programming Language Capabilities Score: 9,
-        Server Capabilities Score: 6,
-        Computer Science Capabilities Score: 8,
-        Data Science Capabilities Score: 8,
-        Algorithm Capabilities Score: 6
+    Analysis:
+    $AI Capabilities Score | 21 | Focus on foundational machine learning concepts, including supervised learning and model optimization. Suggested actions: Study Andrew Ng's "Machine Learning" on Coursera and apply knowledge in hands-on projects such as building a regression model.$
+    $Programming Language Capabilities Score | 27 | Excellent programming skills! Keep up the great work by exploring advanced topics such as asynchronous programming or contributing to open-source projects.$
+    $Server Capabilities Score | 18 | Strengthen server management and networking basics. Suggested actions: Use online labs like AWS Educate to practice server setup, study HTTP protocols, and learn security measures on platforms like Udemy.$
+    $Computer Science Capabilities Score | 24 | Great foundation in computer science! To further excel, consider delving into distributed systems or competitive programming challenges.$
+    $Data Science Capabilities Score | 24 | Strong data science skills! Continue to build expertise by exploring advanced machine learning techniques or participating in Kaggle competitions.$
+    $Algorithm Capabilities Score | 18 | Enhance understanding of sorting, searching, and optimization techniques. Suggested actions: Solve exercises on LeetCode, focusing on algorithm efficiency and complexity.$
 
-        Reasoning and Advice:
-        AI Capabilities Score (7): Focus on foundational machine learning concepts, including supervised learning and model optimization. Suggested actions: study through courses like "Machine Learning" by Andrew Ng on Coursera, and apply knowledge in hands-on projects such as building a classification or regression model.
-        Server Capabilities Score (6): Strengthen server management and networking basics. Suggested actions: explore online labs on AWS or Google Cloud to practice server setup and network configuration; study HTTP protocols and basic security measures through tutorials on platforms like Udacity.
-        Algorithm Capabilities Score (6): Increase understanding of core algorithms, including sorting, searching, and optimization techniques. Suggested actions: work through exercises on platforms like LeetCode and HackerRank, focusing on algorithm efficiency and complexity. Reviewing classic algorithms like binary search, mergesort, and quicksort will be beneficial.
+    ---
 
+    Example 2:
+    Competency Scores:
+    - AI Capabilities Score: 27
+    - Programming Language Capabilities Score: 18
+    - Server Capabilities Score: 24
+    - Computer Science Capabilities Score: 21
+    - Data Science Capabilities Score: 18
+    - Algorithm Capabilities Score: 24
 
-        Example 2: Low Scores in Programming Language, Computer Science, and Data Science
+    Analysis:
+    $AI Capabilities Score | 27 | Excellent AI knowledge! Keep refining your expertise by exploring state-of-the-art AI topics such as reinforcement learning or generative AI. Consider contributing to open-source AI projects.$
+    $Programming Language Capabilities Score | 18 | Strengthen your grasp of fundamental programming concepts. Suggested actions: Take interactive courses on Codecademy or Udemy, focusing on object-oriented programming and debugging.$
+    $Server Capabilities Score | 24 | Great job with server skills! To stay ahead, consider learning about containerization with Docker and Kubernetes or exploring serverless architectures.$
+    $Computer Science Capabilities Score | 21 | Improve understanding of key data structures like graphs and trees. Suggested actions: Follow tutorials on YouTube channels like "CS50" and solve medium-level problems on HackerRank.$
+    $Data Science Capabilities Score | 18 | Build confidence in statistics and data visualization. Suggested actions: Use DataCamp or Kaggle to learn and practice Python libraries like pandas, NumPy, and seaborn.$
+    $Algorithm Capabilities Score | 24 | Strong algorithm skills! Maintain your edge by tackling more challenging problems on platforms like Codeforces and reviewing advanced algorithm topics like dynamic programming.$
 
-        Scores:
-        AI Capabilities Score: 9,
-        Programming Language Capabilities Score: 6,
-        Server Capabilities Score: 8,
-        Computer Science Capabilities Score: 7,
-        Data Science Capabilities Score: 6,
-        Algorithm Capabilities Score: 8
+    Example 3:
+    Competency Scores:
+    - AI Capabilities Score: 24
+    - Programming Language Capabilities Score: 24
+    - Server Capabilities Score: 27
+    - Computer Science Capabilities Score: 21
+    - Data Science Capabilities Score: 27
+    - Algorithm Capabilities Score: 21
 
-        Reasoning and Advice:
-        Programming Language Capabilities Score (6): A score of 6 indicates the need to strengthen programming skills in languages like Python, Java, or C++. Suggested actions: Practice problem-solving on platforms like HackerRank and LeetCode, complete beginner and intermediate programming courses on Codecademy, and work on real-world projects like developing a calculator or a small web application to build confidence in coding syntax and debugging.
-        Computer Science Capabilities Score (7): Strengthen knowledge in data structures (e.g., arrays, hash maps) and fundamental programming principles. Suggested actions: complete exercises on LeetCode or HackerRank, and review algorithms and data structures through video tutorials on YouTube.
-        Data Science Capabilities Score (6): Develop a deep er understanding of data analysis and visualization techniques. Suggested actions: consider courses on DataCamp or edX that cover statistics, data cleaning, and visualization in Python. Practice analyzing datasets on Kaggle to build practical skills.
+    Analysis:
+    $AI Capabilities Score | 24 | Strong AI capabilities! Continue to excel by keeping up with the latest research papers and experimenting with transformer-based architectures like BERT or GPT.$
+    $Programming Language Capabilities Score | 24 | Well-done on programming! Consider expanding your knowledge by learning functional programming paradigms or exploring multi-threaded programming.$
+    $Server Capabilities Score | 27 | Exceptional server management skills! Keep up the great work by gaining expertise in advanced cloud solutions like edge computing or hybrid cloud strategies.$
+    $Computer Science Capabilities Score | 21 | Enhance your understanding of computational theory and algorithms. Suggested actions: Explore courses on edX related to theoretical computer science.$
+    $Data Science Capabilities Score | 27 | Outstanding data science skills! To further advance, explore deep learning for unstructured data and stay active in competitions to hone your expertise.$
+    $Algorithm Capabilities Score | 21 | Improve your algorithm efficiency and optimization skills. Suggested actions: Solve problems involving graph theory and advanced recursion techniques on platforms like LeetCode.$
 
-
-        Example 3: Balanced Scores with Improvement Needed in AI and Algorithm
-
-        Scores: AI Capabilities Score: 6,
-        Programming Language Capabilities Score: 8,
-        Server Capabilities Score: 8,
-        Computer Science Capabilities Score: 9,
-        Data Science Capabilities Score: 9,
-        Algorithm Capabilities Score: 7
-
-        Reasoning and Advice:
-        AI Capabilities Score (6): Strengthen machine learning foundations, particularly supervised learning methods and neural networks. Suggested actions: take a beginner ML course (e.g., Udacity) and work on a simple prediction model project, such as sentiment analysis.
-        Algorithm Capabilities Score (7): Enhance skills in key algorithms and improve understanding of time complexity. Suggested actions: complete exercises focused on sorting and search algorithms on LeetCode, and review Big O notation and algorithm analysis through tutorials.
-
-
-        Instructions for Model: Analyze the input scores according to the examples above. For any score below 8, provide tailored advice for each relevant area. If all scores are 8 or above, provide high-level guidance on achieving mastery and staying updated on the latest advancements.
-        *Anser to Korean*""",
+    **Guidelines for Analysis**:
+    - Provide actionable advice for scores below 24.
+    - Acknowledge scores of 24 or higher as strengths, offering constructive encouragement.
+    - Ensure examples and resources are practical and relevant to real-world applications.
+    - Output answers in Korean except for the scores and resource names.
+    """,
     )
-    from dotenv import load_dotenv
 
     load_dotenv()
 
@@ -332,7 +346,11 @@ async def skill_rec(skill_score: dict):
     }
     response = llm_chain.invoke(input=input_data)
 
-    return response["text"]
+    result = capability_advise_to_json(response["text"])
+    return JSONResponse(content=jsonable_encoder(result))
+
+    # return response["text"]
+
 
 
 @app.get("/")
