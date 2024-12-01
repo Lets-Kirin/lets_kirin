@@ -1,0 +1,30 @@
+[
+  {
+    "courseNumber": "001725",
+    "sectionNumber": "1",
+    "courseName": "선형대수",
+    "professorName": "김정현",
+    "recommendDescription": "선형대수는 현대 수학의 기초가 되는 중요한 이론으로, 컴퓨터 공학, 물리학, 통계학 등 다양한 분야에 응용됩니다."
+  },
+  {
+    "courseNumber": "001357",
+    "sectionNumber": "1",
+    "courseName": "미적분학1",
+    "professorName": "김주명",
+    "recommendDescription": "미적분학1은 미분과 적분을 통해 함수의 변화량과 면적을 계산하는 수학 수업입니다. 함수의 기본적인 성질과 미분법, 적분법을 이해하는 데 초점을 두고 있습니다."
+  },
+  {
+    "courseNumber": "009956",
+    "sectionNumber": "1",
+    "courseName": "문제해결및실습:JAVA",
+    "professorName": "박상일",
+    "recommendDescription": "JAVA를 활용하여 다양한 문제를 해결하는 능력을 키워줄 것입니다. 프로그래밍 실습을 통해 실력을 향상시킵니다. JAVA를 활용하여 다양한 문제를 해결하는 능력을 키워줄 것입니다. 프로그래밍 실습을 통해 실력을 향상시킵니다."
+  },
+  {
+    "courseNumber": "011839",
+    "sectionNumber": "1",
+    "courseName": "세종인을위한전공탐색",
+    "professorName": "박상일",
+    "recommendDescription": "세종인들을 위해 다양한 전공 영역을 탐색하고 선택하는 과정을 도와줍니다. 학생들이 자신에게 맞는 전공을 찾아가는데 도움을 줄 것입니다. 세종인들을 위해 다양한 전공 영역을 탐색하고 선택하는 과정을 도와줍니다. 학생들이 자신에게 맞는 전공을 찾아가는데 도움을 줄 것입니다."
+  }
+]
