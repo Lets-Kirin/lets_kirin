@@ -10,12 +10,12 @@ import {
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { AuthCredentialDto } from '../auth/dto/auth-credential.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MyPageResponseDto } from './mypage.response.dto';
 import { GetUser } from '../auth/get-user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -47,5 +47,10 @@ export class UserController {
   @Get('skills')
   async getUserSkills(@GetUser() user: User) {
     return await this.userService.getUserSkills(user.id);
+  }
+
+  @Get('skill-advise')
+  async getSkillAdvise(@GetUser() user: User) {
+    return await this.userService.getSkillAdvise(user.id);
   }
 }

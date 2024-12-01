@@ -3,13 +3,22 @@ import { AuthCredentialDto } from 'src/auth/dto/auth-credential.dto';
 import { MyPageResponseDto } from './mypage.response.dto';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
+import { ResponseDto } from 'src/common/dto/response.dto';
+import { JwtService } from '@nestjs/jwt';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
+  
   signIn(): { accessToken: string } | PromiseLike<{ accessToken: string }> {
     throw new Error('Method not implemented.');
   }
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly httpService: HttpService
+  ) {}
 
   async createUser(authCredentialDto: AuthCredentialDto): Promise<void> {
     await this.userRepository.createUser(authCredentialDto);
@@ -83,5 +92,49 @@ export class UserService {
         ds: skillLevels.ds,
       }
     };
+  }
+
+  async getSkillAdvise(id: string): Promise<ResponseDto> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new HttpException(
+          '사용자를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const aiRequestData = {
+        ai : user.skillLevels.ai,
+        cs : user.skillLevels.cs,
+        language : user.skillLevels.language,
+        algorithm : user.skillLevels.algorithm,
+        server : user.skillLevels.server,
+        ds : user.skillLevels.ds
+      };
+
+      const aiResponse = await firstValueFrom(this.httpService.post(
+        process.env.AI_SERVICE_URL + '/skill/recommend',
+        aiRequestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      ));
+
+      return new ResponseDto(
+        true,
+        "역량 Advise 성공",
+        aiResponse.data,
+        HttpStatus.OK
+      );
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
