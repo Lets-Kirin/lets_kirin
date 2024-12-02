@@ -6,6 +6,11 @@ const instance = axios.create({
     //withCredentials: true,
 })
 // Axios 라이브러리를 사용하여 HTTP 클라이언트 인스턴스를 생성하는 부분
+export const apiAdvise = (token) => instance.get('/user/skill-advise', {
+    headers: {
+        Authorization: `Bearer ${token}`
+    }
+})
 export const apiLogin = (loginInfo) => instance.post('/auth/signIn', loginInfo);
 export const apiSignUp = (signUpInfo) => instance.post('/auth/signUp', signUpInfo);
 export const apiGetTimeTable = (token) => instance.get('/recommended-timetable', {

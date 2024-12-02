@@ -55,7 +55,7 @@ function CustomTimetable() {
         else {
             const requestBody = {
                 coursePriority: courseArray
-                    .filter(course => course.courseName && course.professorName && course.courseTime) // 필터링 조건
+                    .filter(course => course.courseName && course.professorName) // 필터링 조건
                     .map(course => ({
                         courseName: course.courseName,
                         courseNumber: course.courseNumber,
@@ -162,6 +162,11 @@ function CustomTimetable() {
         }
     }
     const dayoffHandle = (now) => { // 공강 날짜 취소 (현재 금요일 선택되어있을때 금요일 다시 선택 시 checked 취소 및 undefined)
+        // 중복 검사
+        if (timeoffArray.some(item => item.day === now)) {
+            alert("선택한 날짜가 이미 공강 시간표에 있습니다. 다른 날짜를 선택해주세요!");
+            return;
+        }
         if (dayoff === now) {
             setDayoff();
         }
@@ -195,7 +200,6 @@ function CustomTimetable() {
     useEffect(() => {
         if (location.state && location.state.item) { // 수업 선택하는 페이지에서 커스텀 페이지 이동 시, 선택한 수업을 추가해서 리스트를 받아옴
             setCourseArray(location.state.item);
-            console.log(location.state.item[0]);
             setCredit(location.state.credit);
             setDayoff(location.state.dayoff);
             setTimeoffArray(location.state.timeoff);
@@ -214,7 +218,7 @@ function CustomTimetable() {
                             <div>
                                 <img src={runkirin} /><h1>추천 시간표</h1>
                             </div>
-                            <button onClick={() => navigate('/timetable')}>확인</button >
+                            <button onClick={() => navigate('/timetable', { state: { custom: true } })}>확인</button >
                         </CustomHeader>
                         <Table>
                             {reasonCourse.map((item, index) => (

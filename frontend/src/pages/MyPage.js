@@ -4,14 +4,20 @@ import { Tooltip, ResponsiveContainer, PieChart, Pie, Legend } from 'recharts';
 import { IoIosInformationCircleOutline } from "react-icons/io";
 import { GrDocumentUser } from "react-icons/gr";
 import { CiCircleCheck, CiWarning } from "react-icons/ci";
-import { apiGetMyPage, apiUploadFile } from "../apis";
+import { apiAdvise, apiGetMyPage, apiUploadFile } from "../apis";
 import useLogin from "../hooks/useLogin";
 import { useEffect, useState } from "react";
+import runkirin from "../images/runningkirin.png";
+import close from "../images/Close.svg"
+import AdviseButton from "../components/AdviseButton";
+import LoadingComponent from "../components/LoadingComponet";
 
 function MyPage() {
     useLogin();
     const token = sessionStorage.getItem('token');
     const [loading, setLoading] = useState(true);
+    const [adviseModal, setAdviseModal] = useState(false);
+    const [modalLoading, setModalLoading] = useState(false);
     const colorList = [
         "#FFB700",  // 머스타드
         "#5678FF",  // 아쿠아블루
@@ -32,6 +38,18 @@ function MyPage() {
             setLoading(false);
         }
     }
+    const [adviseInfo, setAdviseInfo] = useState({
+    });
+    const formatKey = (key) => {
+        if (key === "ai" || key === "cs" || key === "ds") {
+            return key.toUpperCase(); // AI, CS, DS는 모두 대문자
+        } else {
+            return key.charAt(0).toUpperCase() + key.slice(1); // 나머지는 첫 글자만 대문자
+        }
+    };
+    const getTotalSkillLevel = (skillLevel) => {    // 역량 총 합 반환하는 함수
+        return Object.values(skillLevel).reduce((total, value) => total + value, 0);
+    };
     const [userInfo, setUserInfo] = useState({
         "name": "로딩 중..",
         "year": "로딩 중..",
@@ -61,7 +79,6 @@ function MyPage() {
             await FileSubmit(file); // 파일 선택과 동시에 서버에 업로드
         }
     };
-
     const FileSubmit = async (file) => {
         try {
             apiUploadFile(file, token)
@@ -73,6 +90,26 @@ function MyPage() {
             console.log('Error uploading file:', error); // 오류 처리
         }
     };
+    const AdviseClick = () => {
+        setModalLoading(true);
+        setAdviseModal(true);
+        try {
+            apiAdvise(token)
+                .then(response => {
+                    if (response.data.isSuccess) {
+                        setAdviseInfo(response.data.result);
+                        setModalLoading(false);
+                        console.log(response.data.result);
+                    }
+                    else {
+                        alert(response.data.message);
+                    }
+                })
+        }
+        catch (error) {
+            console.log('Error Advise Skill:', error);
+        }
+    }
     useEffect(() => {
         fetchMyPage();
     }, []);
@@ -90,8 +127,8 @@ function MyPage() {
     }, [userInfo]); // userInfo가 변경될 때마다 데이터 업데이트
     return (
         <Wrapper>
-            {loading ? (<WidthBlock></WidthBlock>) :
-                (<WidthBlock style={{ height: "170vh" }}>
+            {loading ? (<WidthBlock></WidthBlock>)
+                : (<WidthBlock style={{ height: "180vh" }}>
                     <TitleBar>
                         <TitleText>정보</TitleText>
                     </TitleBar>
@@ -188,6 +225,7 @@ function MyPage() {
                     <TitleBar>
                         <TitleText>수업 역량 분포도</TitleText>
                     </TitleBar>
+                    <AdviseButton onClick={() => { { AdviseClick() } }} />
                     <ChartBlock>
                         {userInfo.fileUpload ?
                             <ResponsiveContainer width="100%" height="100%">
@@ -209,12 +247,131 @@ function MyPage() {
                             <p style={{ fontSize: "2rem", fontWeight: "bold" }}>기이수 파일 업로드 부탁드립니다..! 🙏 </p>
                         }
                     </ChartBlock>
-
+                    {adviseModal ?
+                        <ModalBlock>
+                            <Overlay onClick={() => setAdviseModal(false)} />
+                            <Modal>
+                                {
+                                    modalLoading ?
+                                        <LoadingComponent /> :
+                                        <>
+                                            <AdviseHeader>
+                                                <div style={{ width: "20%", display: "flex", flexDirection: "row", alignItems: "center", gap: "5%" }}>
+                                                    <img src={runkirin} />
+                                                    <p>분석 결과</p>
+                                                </div>
+                                                <img src={close} style={{ width: "1.2rem", cursor: "pointer" }} onClick={() => setAdviseModal(false)} />
+                                            </AdviseHeader>
+                                            <Table>
+                                                {Object.entries(adviseInfo).map(([key, value], index) => (
+                                                    <Reason>
+                                                        <h1>
+                                                            {index + 1}. {formatKey(key)} 수치:
+                                                            <SkillBar color={colorList[index]} width={userInfo.skillLevel[key] / getTotalSkillLevel(userInfo.skillLevel) || 0} />
+                                                            {(userInfo.skillLevel[key] / getTotalSkillLevel(userInfo.skillLevel)).toFixed(2) * 100} %
+                                                        </h1>
+                                                        <h2>{value[1]}</h2>
+                                                    </Reason>
+                                                ))}
+                                            </Table>
+                                        </>
+                                }
+                            </Modal>
+                        </ModalBlock>
+                        : <></>
+                    }
                 </WidthBlock>)
             }
         </Wrapper >
     )
 }
+const SkillBar = styled.div`
+    background-color: ${(props) => props.color}; 
+    height: 60%;
+    width: ${(props) => props.width * 100}%; /* 막대의 너비 */
+    border-radius: 0.25rem;
+`;
+const Table = styled.div`
+    display: grid;
+    width: 88%;
+    height: 100%;
+    grid-template-columns:repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr); 
+    font-size: 0.6rem;
+    gap: 2%;
+    overflow-y: auto;
+`;
+const Reason = styled(FlexBox)`
+    width: 100%;
+    height: 100%;
+    padding: 2% 4%;
+    flex-direction: column;
+    border: 1px solid #bebebe;
+    border-radius: 1rem;
+    gap: 5%;
+    h1{
+        height: 20%;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border-bottom: 1px solid #bebebe;
+        display: flex;
+        gap: 2%;
+        align-items: center;
+        overflow: hidden;
+    }
+    h2{
+        height: 65%;
+        font-weight: 400;
+        font-size: 0.6rem;
+    }
+`
+const ModalBlock = styled(FlexBox)`
+    position: fixed;
+    width: 100vh;
+    height: 100vh;
+    z-index: 5;
+`
+const AdviseHeader = styled(FlexBox)`
+    width: 100%;
+    height: 6%;
+    border-bottom: 2px solid #bebebe;
+    justify-content: space-between;
+    align-items: center;
+    p{
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    img{
+        width: 1.5rem;
+    }
+`
+const Overlay = styled(FlexBox)`
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.3);
+    z-index: 10; /* 폼보다 위에 위치 */
+    justify-content: center;
+    align-items: center;
+`
+const Modal = styled(FlexBox)`
+    position: fixed;
+    top: 0;
+    left: 0;
+    margin-left: 5%;
+    margin-top: 2.5%;
+    width: 90%;
+    height: 90%;
+    border-radius: 1rem;
+    background-color: white;
+    flex-direction: column;
+    align-items: center;
+    padding: 4%;
+    gap: 4%;
+    z-index: 20; /* 오버레이보다 위에 위치 */
+`
 const ChartBlock = styled(FlexBox)`
     width: 100%;
     height: 35%;

@@ -6,9 +6,10 @@ import useLogin from "../hooks/useLogin";
 import arrow from "../images/arrow-right-solid.svg";
 import add from "../images/Add_Time.svg";
 import runKirin from "../images/runningkirin.png";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 function Timetable() {
     useLogin();
+    const location = useLocation();
     const navigate = useNavigate();
     const token = sessionStorage.getItem('token');
     // 선택된 항목의 인덱스를 상태로 저장
@@ -60,7 +61,13 @@ function Timetable() {
                     ...fetchedTimetable,
                     recommendedCourses: sortedCourses
                 });
-                setSelectedIndex(0); // 시간표가 있으면 정렬하고 1번째 거 선택된 상태
+                console.log(location);
+                // 커스텀 페이지에서 왔는지 확인
+                if (location.state && location.state.custom) {
+                    setSelectedIndex(sortedCourses.length - 1); // 마지막 추천 시간표 선택
+                } else {
+                    setSelectedIndex(0); // 기본 첫 번째 선택
+                }
             } else {
                 setTimetable(fetchedTimetable); // recommendedCourses가 없으면 그대로 설정
             }
@@ -70,8 +77,6 @@ function Timetable() {
             setLoading(false);
         }
     };
-
-
     const FileChange = (e) => {
         const file = e.target.files[0];
         if (file) {

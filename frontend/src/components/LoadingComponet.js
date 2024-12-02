@@ -2,27 +2,27 @@ import React from 'react';
 import styled from 'styled-components';
 
 const LoadingComponent = () => {
-    return (
-        <StyledWrapper>
-            <div className="wrapper">
-                <div className="circle" />
-                <div className="circle" />
-                <div className="circle" />
-                <div className="shadow" />
-                <div className="shadow" />
-                <div className="shadow" />
-            </div>
-            <div className="spinner">
-                <span>L</span>
-                <span>O</span>
-                <span>A</span>
-                <span>D</span>
-                <span>I</span>
-                <span>N</span>
-                <span>G</span>
-            </div>
-        </StyledWrapper>
-    );
+  return (
+    <StyledWrapper>
+      <div className="wrapper">
+        <div className="circle" />
+        <div className="circle" />
+        <div className="circle" />
+        <div className="shadow" />
+        <div className="shadow" />
+        <div className="shadow" />
+      </div>
+      <div className="spinner">
+        <span>L</span>
+        <span>O</span>
+        <span>A</span>
+        <span>D</span>
+        <span>I</span>
+        <span>N</span>
+        <span>G</span>
+      </div>
+    </StyledWrapper>
+  );
 }
 
 const StyledWrapper = styled.div`
