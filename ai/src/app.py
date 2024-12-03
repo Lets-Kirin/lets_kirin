@@ -190,7 +190,7 @@ async def course_rec(payload: dict):
         Generate a list of courses adhering to this template. *Anwer into Korean*
         Must Put $ before and after the recommended subject!
         {data}
-        Must recommend a course as close *as possible to {credit} credits* after looking at the data above. If the given grade is 15, please recommend a course close to 15 credits. Also, please recommend a course suitable for the {department} department and {semester} semester.
+        *Must recommend a course as close as possible to {credit} credits* after looking at the data above. If the given grade is 15, please recommend a course close to 15 credits. Also, please recommend a course suitable for the {department} department and {semester} semester.
             """,
     )
 
