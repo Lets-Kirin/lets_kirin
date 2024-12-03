@@ -199,8 +199,7 @@ class QueryLoader:
         ],
     }
 
-    def __init__(self, user_id: str, priority_courses: dict, time_off: list, day_off: list) -> None:
-        self.time_off = time_off
+    def __init__(self, user_id: str, priority_courses: list, time_off: list, day_off: list) -> None:
         self.connection = pymysql.connect(
             host=os.environ.get("DB_HOST"),
             port=int(os.environ.get("DB_PORT")),
@@ -336,7 +335,8 @@ class QueryLoader:
             )"""
 
         for idx in range(len(day_off)):
-            time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx].replace('요일', '')}%\'"""
+            if day_off[idx] is not None:
+                time_filter += f"""\nAND courseDay NOT Like \'%{day_off[idx].replace('요일', '')}%\'"""
 
         return time_filter
 
