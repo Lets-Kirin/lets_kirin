@@ -264,7 +264,7 @@ async def skill_rec(skill_score: dict):
     3. Suggest specific ways to build on these skills, including resources, learning strategies, or types of projects to pursue.
     4. For scores of 24 or higher, acknowledge them as strengths and provide words of encouragement to maintain or further enhance the proficiency.
 
-    Output Format:$Score | advice$
+    Output Format:$Score Name | Score | advice$
     
     Examples of Analysis:
 
