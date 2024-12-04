@@ -179,7 +179,7 @@ async def course_rec(payload: dict):
         Please output the results in the following format for each recommended course: $courseNumber | sectionNumber | courseName | credits | professorName | [Reason for Recommendation]$
 
 
-        Format the output strictly as follows:
+        Format the OUTPUT strictly as follows:
         $courseNumber | sectionNumber | courseName | professorName | [Reason for Recommendation based on course description]$
 
         Example:
@@ -194,7 +194,7 @@ async def course_rec(payload: dict):
             """,
     )
 
-    llm = ChatOpenAI(temperature=1, model_name="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
+    llm = ChatOpenAI(temperature=0, model_name="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     # chain = load_qa_chain(llm, chain_type="stuff")
