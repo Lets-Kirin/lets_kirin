@@ -76,46 +76,37 @@ export class RecommendedTimetableService {
       const maxRetries = 3;
       const retryDelay = 1000; // 1초 대기
 
-      let validResponse = false;
-
-      while (!validResponse) {
-        while (retryCount < maxRetries) {
-          try {
-            aiResponse = await firstValueFrom(
-              this.httpService.post(
-                process.env.AI_SERVICE_URL + '/course/recommend',
-                aiRequestData,
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  timeout: 30000, // 30초 타임아웃 설정
+      while (retryCount < maxRetries) {
+        try {
+          aiResponse = await firstValueFrom(
+            this.httpService.post(
+              process.env.AI_SERVICE_URL + '/course/recommend',
+              aiRequestData,
+              {
+                headers: {
+                  'Content-Type': 'application/json',
                 },
-              ),
-            );
+                timeout: 30000, // 30초 타임아웃 설정
+              },
+            ),
+          );
 
-            if (await this.checkValid(aiResponse.data, modifiedRequestData)) {
-              validResponse = true;
-            } else {
-              retryCount++;
-            }
+          break; // 성공하면 반복 중단
+        } catch (error) {
+          retryCount++;
+          console.log(
+            `AI 서비스 호출 실패 (${retryCount}/${maxRetries}):`,
+            error.message,
+          );
 
-            break; // 성공하면 반복 중단
-          } catch (error) {
-            retryCount++;
-            console.log(
-              `AI 서비스 호출 실패 (${retryCount}/${maxRetries}):`,
-              error.message,
-            );
-
-            if (retryCount === maxRetries) {
-              throw new Error(`AI 서비스 연결 실패 (${maxRetries}회 시도)`);
-            }
-
-            // 다음 시도 전 대기
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          if (retryCount === maxRetries) {
+            throw new Error(`AI 서비스 연결 실패 (${maxRetries}회 시도)`);
           }
+
+          // 다음 시도 전 대기
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
         }
+
 
         // 응답이 배열인지 확인
         if (!Array.isArray(aiResponse.data)) {
