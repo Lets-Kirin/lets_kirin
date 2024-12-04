@@ -11,7 +11,6 @@ import runkirin from "../images/runningkirin.png";
 import close from "../images/Close.svg"
 import AdviseButton from "../components/AdviseButton";
 import LoadingComponent from "../components/LoadingComponet";
-
 function MyPage() {
     useLogin();
     const token = sessionStorage.getItem('token');
@@ -268,7 +267,7 @@ function MyPage() {
                                                         <h1>
                                                             {index + 1}. {formatKey(key)} 수치:
                                                             <SkillBar color={colorList[index]} width={userInfo.skillLevel[key] / getTotalSkillLevel(userInfo.skillLevel) || 0} />
-                                                            {(userInfo.skillLevel[key] / getTotalSkillLevel(userInfo.skillLevel)).toFixed(2) * 100} %
+                                                            {Math.ceil((userInfo.skillLevel[key] / getTotalSkillLevel(userInfo.skillLevel)).toFixed(2) * 100)} %
                                                         </h1>
                                                         <h2>{value[1]}</h2>
                                                     </Reason>

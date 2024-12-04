@@ -280,7 +280,7 @@ function CustomTimetable() {
                                 </div>
                             </Dayoff>
                             <Credits>
-                                <h1>학점 <span>(12 ~ 21)</span></h1>
+                                <h1>희망 학점 <span>(12 ~ 21)</span></h1>
                                 <input value={credit} onChange={(e) => setCredit(e.currentTarget.value)} />
                             </Credits>
                             <Submit>
