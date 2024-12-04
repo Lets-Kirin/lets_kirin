@@ -27,7 +27,7 @@ export class RecommendedTimetableService {
     private readonly coursesRepository: Repository<Courses>,
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   // POST /recommended-timetable
   async createRecommendation(
@@ -96,6 +96,8 @@ export class RecommendedTimetableService {
 
             if (await this.checkValid(aiResponse.data, modifiedRequestData)) {
               validResponse = true;
+            } else {
+              retryCount++;
             }
 
             break; // 성공하면 반복 중단
